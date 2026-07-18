@@ -1,11 +1,20 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Feed from '@/pages/Feed';
+import ItemDetail from '@/pages/ItemDetail';
+import RestaurantProfile from '@/pages/RestaurantProfile';
+import Search from '@/pages/Search';
+import Cart from '@/pages/Cart';
+import Orders from '@/pages/Orders';
+import OrderTracking from '@/pages/OrderTracking';
+import Profile from '@/pages/Profile';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -34,7 +43,14 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route path="/" element={<Feed />} />
+      <Route path="/item/:id" element={<ItemDetail />} />
+      <Route path="/restaurant/:id" element={<RestaurantProfile />} />
+      <Route path="/search" element={<Search />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/orders" element={<Orders />} />
+      <Route path="/order/:id/tracking" element={<OrderTracking />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

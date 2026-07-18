@@ -1,0 +1,51 @@
+{
+  "name": "CreatorProfile",
+  "type": "object",
+  "properties": {
+    "referral_code": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "social_handle": {
+      "type": "string"
+    },
+    "follower_count": {
+      "type": "number",
+      "default": 0
+    },
+    "commission_rate": {
+      "type": "number",
+      "default": 0.1
+    },
+    "total_clicks": {
+      "type": "number",
+      "default": 0
+    },
+    "total_orders": {
+      "type": "number",
+      "default": 0
+    },
+    "total_earnings": {
+      "type": "number",
+      "default": 0
+    },
+    "pending_earnings": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "suspended"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "referral_code"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "DriverProfile",
+  "type": "object",
+  "properties": {
+    "vehicle_type": {
+      "type": "string",
+      "enum": [
+        "car",
+        "motorcycle",
+        "bicycle",
+        "scooter"
+      ],
+      "default": "car"
+    },
+    "license_number": {
+      "type": "string"
+    },
+    "is_available": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_approved": {
+      "type": "boolean",
+      "default": false
+    },
+    "total_earnings": {
+      "type": "number",
+      "default": 0
+    },
+    "total_deliveries": {
+      "type": "number",
+      "default": 0
+    },
+    "rating": {
+      "type": "number",
+      "default": 5
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "vehicle_type"
+  ]
+}

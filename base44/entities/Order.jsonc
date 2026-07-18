@@ -1,0 +1,92 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "restaurant_id": {
+      "type": "string"
+    },
+    "restaurant_name": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "preparing",
+        "picked_up",
+        "delivered",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "menu_item_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "video_url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "delivery_address": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed"
+      ],
+      "default": "paid"
+    },
+    "delivery_fee": {
+      "type": "number",
+      "default": 2.99
+    },
+    "notes": {
+      "type": "string"
+    },
+    "referral_code": {
+      "type": "string"
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "commission_amount": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "items",
+    "total_amount"
+  ]
+}

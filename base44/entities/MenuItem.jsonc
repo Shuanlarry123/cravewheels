@@ -1,0 +1,51 @@
+{
+  "name": "MenuItem",
+  "type": "object",
+  "properties": {
+    "restaurant_id": {
+      "type": "string"
+    },
+    "restaurant_name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "is_available": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "views": {
+      "type": "number",
+      "default": 0
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "video_url",
+    "price"
+  ]
+}

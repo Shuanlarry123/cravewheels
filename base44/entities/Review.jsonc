@@ -1,0 +1,29 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "restaurant_id": {
+      "type": "string"
+    },
+    "restaurant_name": {
+      "type": "string"
+    },
+    "order_id": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "default": 5
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "comment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "restaurant_id",
+    "video_url"
+  ]
+}
