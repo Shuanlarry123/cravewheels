@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Bike, ChevronLeft, ChevronRight, Shield } from "lucide-react";
+import { Bike, ChevronLeft, ChevronRight, Shield, Store } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
@@ -29,6 +29,20 @@ function SettingsInner() {
     }
   };
 
+  const goRestaurant = async () => {
+    setSwitching(true);
+    try {
+      if (user.role !== "restaurant") {
+        await base44.auth.updateMe({ role: "restaurant" });
+      }
+      navigate("/restaurant-dashboard");
+    } catch {
+      toast.error("Failed to switch to restaurant mode");
+    } finally {
+      setSwitching(false);
+    }
+  };
+
   if (!user)
     return (
       <CustomerLayout>
@@ -39,6 +53,7 @@ function SettingsInner() {
     );
 
   const isDriver = user.role === "driver";
+  const isRestaurant = user.role === "restaurant";
 
   return (
     <CustomerLayout>
@@ -47,6 +62,29 @@ function SettingsInner() {
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
+
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Store className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Restaurant Mode</p>
+              <p className="text-xs text-muted-foreground">Manage your menu, profile & orders</p>
+            </div>
+            {isRestaurant && (
+              <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-semibold">Active</span>
+            )}
+          </div>
+          <button
+            onClick={goRestaurant}
+            disabled={switching}
+            className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {switching ? "Switching..." : isRestaurant ? "Open Restaurant Dashboard" : "Switch to Restaurant Mode"}
+            {!switching && <ChevronRight className="w-4 h-4" />}
+          </button>
+        </div>
 
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
