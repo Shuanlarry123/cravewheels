@@ -15,6 +15,7 @@ import Cart from '@/pages/Cart';
 import Orders from '@/pages/Orders';
 import OrderTracking from '@/pages/OrderTracking';
 import Profile from '@/pages/Profile';
+import DriverDashboard from '@/pages/DriverDashboard';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
       <Route path="/orders" element={<Orders />} />
       <Route path="/order/:id/tracking" element={<OrderTracking />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/driver" element={<DriverDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
