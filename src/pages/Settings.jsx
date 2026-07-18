@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Bike, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bike, ChevronLeft, ChevronRight, Shield } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
@@ -70,6 +70,19 @@ function SettingsInner() {
             {!switching && <ChevronRight className="w-4 h-4" />}
           </button>
         </div>
+
+        {user.role === "admin" && (
+          <Link to="/admin-dashboard" className="mt-4 flex items-center gap-3 bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Admin Dashboard</p>
+              <p className="text-xs text-muted-foreground">Review applications & monitor performance</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
+        )}
       </div>
     </CustomerLayout>
   );

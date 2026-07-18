@@ -18,6 +18,7 @@ import Profile from '@/pages/Profile';
 import DriverDashboard from '@/pages/DriverDashboard';
 import Settings from '@/pages/Settings';
 import About from '@/pages/About';
+import AdminDashboard from '@/pages/AdminDashboard';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
       <Route path="/driver" element={<DriverDashboard />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/about" element={<About />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
