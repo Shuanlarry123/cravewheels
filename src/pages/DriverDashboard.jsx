@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { getUserLocation } from "@/lib/distance";
+import DriverLayout from "@/components/DriverLayout";
 import DriverOnboarding from "@/components/driver/DriverOnboarding";
-import DriverStats from "@/components/driver/DriverStats";
 import AvailableDeliveries from "@/components/driver/AvailableDeliveries";
-import CurrentDelivery from "@/components/driver/CurrentDelivery";
+import ActiveDeliveryCard from "@/components/driver/ActiveDeliveryCard";
+import MapboxMap from "@/components/MapboxMap";
+import { Power, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function DriverDashboard() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -28,27 +28,26 @@ export default function DriverDashboard() {
 
   const loadOrders = useCallback(async (u) => {
     const all = await base44.entities.Order.filter({});
-    const mine = all.find(
-      (o) => o.driver_id === u.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
-    );
-    const available = all.filter(
-      (o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status)
-    );
+    const mine = all.find((o) => o.driver_id === u.id && ["confirmed", "preparing", "picked_up"].includes(o.status));
+    const available = all.filter((o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status));
     setOrders(mine ? [mine, ...available] : available);
 
     const restIds = [...new Set(all.map((o) => o.restaurant_id).filter(Boolean))];
     if (restIds.length) {
       const rests = await Promise.all(restIds.map((id) => base44.entities.Restaurant.get(id).catch(() => null)));
       const map = {};
-      rests.forEach((r, i) => { if (r) map[restIds[i]] = r; });
+      rests.forEach((r, i) => {
+        if (r) map[restIds[i]] = r;
+      });
       setRestaurants(map);
     }
   }, []);
 
   useEffect(() => {
+    let u;
     (async () => {
       try {
-        const u = await base44.auth.me();
+        u = await base44.auth.me();
         setUser(u);
         await loadProfile(u);
         await loadOrders(u);
@@ -61,14 +60,12 @@ export default function DriverDashboard() {
         setLoading(false);
       }
     })();
-
     const unsub = base44.entities.Order.subscribe(() => {
-      if (user) loadOrders(user);
+      if (u) loadOrders(u);
     });
     return unsub;
   }, []);
 
-  // refresh location periodically while online
   useEffect(() => {
     if (!profile?.is_available) return;
     const id = setInterval(() => getUserLocation().then(setLocation), 15000);
@@ -143,15 +140,6 @@ export default function DriverDashboard() {
     }
   };
 
-  const goCustomer = async () => {
-    try {
-      await base44.auth.updateMe({ role: "customer" });
-      navigate("/");
-    } catch {
-      navigate("/");
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -162,15 +150,9 @@ export default function DriverDashboard() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        <DriverOnboarding userId={user?.id} onCreated={loadProfile.bind(null, user)} />
-        <button
-          onClick={goCustomer}
-          className="fixed top-4 left-4 h-9 px-3 rounded-xl bg-card border border-border text-xs font-medium text-muted-foreground"
-        >
-          ← Back to Customer
-        </button>
-      </div>
+      <DriverLayout>
+        <DriverOnboarding userId={user?.id} onCreated={(p) => setProfile(p)} />
+      </DriverLayout>
     );
   }
 
@@ -179,53 +161,84 @@ export default function DriverDashboard() {
   );
   const available = orders.filter((o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status));
   const myRestaurant = myOrder ? restaurants[myOrder.restaurant_id] : null;
+  const pickedUp = myOrder?.status === "picked_up";
+  const destLng = myOrder ? (pickedUp ? myOrder.longitude : myRestaurant?.longitude) : undefined;
+  const destLat = myOrder ? (pickedUp ? myOrder.latitude : myRestaurant?.latitude) : undefined;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-md min-h-screen px-4 pt-8 pb-12">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Driver</h1>
-            <p className="text-sm text-muted-foreground capitalize">
-              {profile.vehicle_type} · {user?.full_name || "Driver"}
-            </p>
-          </div>
-          <button
-            onClick={goCustomer}
-            className="h-9 px-3 rounded-xl bg-card border border-border text-xs font-medium text-muted-foreground"
-          >
-            Customer mode
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <DriverStats profile={profile} onToggleOnline={toggleOnline} />
-        </div>
-
-        {myOrder ? (
-          <div className="mb-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
-              Current Delivery
-            </h2>
-            <CurrentDelivery
-              order={myOrder}
-              restaurant={myRestaurant}
-              location={location}
+    <DriverLayout>
+      <div className="relative w-full h-[calc(100dvh-4rem)] overflow-hidden">
+        {/* Full-screen map */}
+        <div className="absolute inset-0">
+          {token ? (
+            <MapboxMap
               token={token}
-              onPickup={() => markPickedUp(myOrder)}
-              onDeliver={() => markDelivered(myOrder)}
-              busy={busy}
+              driverLng={location?.lng}
+              driverLat={location?.lat}
+              destLng={destLng}
+              destLat={destLat}
             />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Top floating bar */}
+        <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/80 to-transparent pb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold">Driver</p>
+              <p className="text-[11px] text-muted-foreground capitalize">
+                {profile.vehicle_type} · {user?.full_name || ""}
+              </p>
+            </div>
+            <button
+              onClick={toggleOnline}
+              disabled={!profile.is_approved || busy}
+              className={`h-9 px-3 rounded-full text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50 ${
+                profile.is_available ? "bg-green-500 text-white" : "bg-card border border-border text-muted-foreground"
+              }`}
+            >
+              <Power className="w-3.5 h-3.5" /> {profile.is_available ? "Online" : "Offline"}
+            </button>
           </div>
-        ) : (
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
-              Available Deliveries
-            </h2>
-            <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
+          {!profile.is_approved && (
+            <p className="mt-2 text-[11px] text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-2 py-1 inline-block">
+              Pending admin approval
+            </p>
+          )}
+        </div>
+
+        {/* Bottom sheet with oncoming orders / active delivery */}
+        <div className="absolute bottom-0 inset-x-0 z-10 bg-background rounded-t-3xl border-t border-border max-h-[48%] overflow-y-auto no-scrollbar">
+          <div className="w-10 h-1 rounded-full bg-muted mx-auto mt-2 mb-1" />
+          <div className="p-4 pt-1">
+            {myOrder ? (
+              <>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                  Active Delivery
+                </h2>
+                <ActiveDeliveryCard
+                  order={myOrder}
+                  restaurant={myRestaurant}
+                  onPickup={() => markPickedUp(myOrder)}
+                  onDeliver={() => markDelivered(myOrder)}
+                  busy={busy}
+                />
+              </>
+            ) : (
+              <>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                  Oncoming Orders {available.length > 0 && `(${available.length})`}
+                </h2>
+                <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </DriverLayout>
   );
 }

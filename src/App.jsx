@@ -21,6 +21,7 @@ import About from '@/pages/About';
 import AdminDashboard from '@/pages/AdminDashboard';
 import RestaurantDashboard from '@/pages/RestaurantDashboard';
 import DiscoveryMap from '@/pages/DiscoveryMap';
+import DriverProfile from '@/pages/DriverProfile';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
       <Route path="/order/:id/tracking" element={<OrderTracking />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/driver" element={<DriverDashboard />} />
+      <Route path="/driver/profile" element={<DriverProfile />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/about" element={<About />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
