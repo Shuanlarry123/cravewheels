@@ -1,30 +1,28 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import { base44 } from "@/api/base44Client";
-import { Search as SearchIcon, Star, MapPin } from "lucide-react";
+import { Search as SearchIcon, Star, MapPin, ChevronRight } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
+import MapboxExploreMap from "@/components/MapboxExploreMap";
 import { CartProvider } from "@/lib/cartContext";
 
-const CATEGORIES = ["All", "Burgers", "Pizza", "Sushi", "Salads", "Desserts", "Drinks"];
+const CUISINES = ["All", "Burgers", "Pizza", "Sushi", "Salads", "Desserts", "Drinks", "Bowls"];
 
 function SearchInner() {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
-  const [items, setItems] = useState([]);
+  const [cuisine, setCuisine] = useState("All");
   const [restaurants, setRestaurants] = useState([]);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [focusId, setFocusId] = useState(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [m, r] = await Promise.all([
-          base44.entities.MenuItem.filter({ is_available: true }, "-views", 60),
-          base44.entities.Restaurant.filter({ is_approved: true }, "-rating", 30),
-        ]);
-        setItems(m);
+        const r = await base44.entities.Restaurant.filter({ is_approved: true }, "-rating", 30);
         setRestaurants(r);
+        const t = await base44.functions.invoke("getMapboxToken", {});
+        setToken(t.data?.token || null);
       } finally {
         setLoading(false);
       }
@@ -32,86 +30,98 @@ function SearchInner() {
   }, []);
 
   const filtered = useMemo(() => {
-    return items.filter((i) => {
+    return restaurants.filter((r) => {
       const matchQ =
         !query ||
-        i.name?.toLowerCase().includes(query.toLowerCase()) ||
-        i.restaurant_name?.toLowerCase().includes(query.toLowerCase());
-      const matchC = category === "All" || i.category === category;
+        r.name?.toLowerCase().includes(query.toLowerCase()) ||
+        r.cuisine_type?.toLowerCase().includes(query.toLowerCase());
+      const matchC = cuisine === "All" || r.cuisine_type === cuisine;
       return matchQ && matchC;
     });
-  }, [items, query, category]);
-
-  const mapRestaurants = restaurants.filter((r) => r.latitude && r.longitude);
+  }, [restaurants, query, cuisine]);
 
   return (
     <CustomerLayout>
-      <div className="px-4 pt-6 pb-24 min-h-screen">
-        <h1 className="text-2xl font-bold mb-4">Search</h1>
-        <div className="relative mb-4">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search dishes or restaurants..."
-            className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary"
-          />
+      <div className="relative w-full h-[calc(100dvh-4rem)] overflow-hidden">
+        <div className="absolute inset-0">
+          {token && filtered.length > 0 ? (
+            <MapboxExploreMap token={token} restaurants={filtered} focusId={focusId} onSelect={setFocusId} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+              {loading ? "Loading map..." : "No restaurants found"}
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                category === c ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-
-        {mapRestaurants.length > 0 && (
-          <div className="h-40 rounded-2xl overflow-hidden mb-4 border border-border">
-            <MapContainer center={[mapRestaurants[0].latitude, mapRestaurants[0].longitude]} zoom={11} className="h-full w-full" style={{ background: "#1a1a1a" }}>
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-              {mapRestaurants.map((r) => (
-                <Popup key={r.id} position={[r.latitude, r.longitude]}>
-                  <Link to={`/restaurant/${r.id}`} className="text-sm font-medium">{r.name}</Link>
-                </Popup>
-              ))}
-              {mapRestaurants.map((r) => (
-                <CircleMarker key={r.id} center={[r.latitude, r.longitude]} radius={8} pathOptions={{ color: "#FF6B2C", fillColor: "#FF6B2C", fillOpacity: 0.8 }}>
-                  <Popup>
-                    <Link to={`/restaurant/${r.id}`}>{r.name}</Link>
-                  </Popup>
-                </CircleMarker>
-              ))}
-            </MapContainer>
+        {/* Top search overlay */}
+        <div className="absolute top-0 left-0 right-0 p-3 z-10 bg-gradient-to-b from-background via-background/80 to-transparent pb-8">
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search restaurants..."
+              className="w-full bg-card/90 backdrop-blur border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary"
+            />
           </div>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mt-2">
+            {CUISINES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCuisine(c)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                  cuisine === c
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card/90 border border-border text-muted-foreground"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Selected restaurant quick link */}
+        {focusId && (
+          <Link
+            to={`/restaurant/${focusId}`}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 mt-[-3.5rem] flex items-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-full shadow-lg active:scale-95 transition-transform"
+          >
+            View restaurant <ChevronRight className="w-4 h-4" />
+          </Link>
         )}
 
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-primary rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-10">No results found.</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {filtered.map((i) => (
-              <Link key={i.id} to={`/item/${i.id}`} className="bg-card border border-border rounded-2xl overflow-hidden active:scale-[0.98] transition-transform">
-                <div className="aspect-square bg-muted relative">
-                  {i.thumbnail_url && <img src={i.thumbnail_url} className="w-full h-full object-cover" />}
-                  <span className="absolute bottom-1 right-1 bg-black/70 text-white text-xs font-bold px-1.5 py-0.5 rounded">${i.price.toFixed(2)}</span>
-                </div>
-                <div className="p-2">
-                  <p className="text-xs font-medium line-clamp-1">{i.name}</p>
-                  <p className="text-[10px] text-muted-foreground line-clamp-1">{i.restaurant_name}</p>
-                </div>
-              </Link>
-            ))}
+        {/* Bottom restaurant showcase */}
+        {filtered.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 z-10 pb-3 pt-12 bg-gradient-to-t from-background via-background/90 to-transparent">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar px-3">
+              {filtered.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setFocusId(r.id)}
+                  className={`shrink-0 w-44 text-left rounded-2xl overflow-hidden border transition-all bg-card ${
+                    focusId === r.id ? "border-primary ring-2 ring-primary/40" : "border-border"
+                  }`}
+                >
+                  <div className="h-20 w-full bg-muted relative">
+                    {r.cover_url ? (
+                      <img src={r.cover_url} className="w-full h-full object-cover" alt={r.name} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-2xl">🍴</div>
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-sm font-semibold line-clamp-1">{r.name}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">{r.cuisine_type}</p>
+                    <div className="flex items-center gap-1 text-[11px] mt-1">
+                      <Star className="w-3 h-3 fill-primary text-primary" /> {r.rating?.toFixed(1)}
+                      <span className="mx-1 text-muted-foreground">·</span>
+                      <MapPin className="w-3 h-3 text-muted-foreground" /> {r.delivery_radius_km}km
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
