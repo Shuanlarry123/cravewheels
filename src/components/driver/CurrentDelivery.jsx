@@ -1,6 +1,7 @@
 import React from "react";
 import { Store, MapPin, Navigation, CheckCircle2, Phone } from "lucide-react";
 import MapboxMap from "@/components/MapboxMap";
+import PickupReference from "@/components/driver/PickupReference";
 
 export default function CurrentDelivery({ order, restaurant, location, token, onPickup, onDeliver, busy }) {
   const pickedUp = order.status === "picked_up";
@@ -10,7 +11,7 @@ export default function CurrentDelivery({ order, restaurant, location, token, on
 
   return (
     <div className="rounded-2xl bg-card border border-border overflow-hidden">
-      <div className="h-64 w-full bg-black/30">
+      <div className="h-80 w-full bg-black/30">
         {token ? (
           <MapboxMap
             token={token}
@@ -25,6 +26,12 @@ export default function CurrentDelivery({ order, restaurant, location, token, on
           </div>
         )}
       </div>
+
+      {!pickedUp && (
+        <div className="px-4 pt-4">
+          <PickupReference order={order} restaurant={restaurant} />
+        </div>
+      )}
 
       <div className="p-4">
         <div className="flex items-center gap-2 mb-3">
