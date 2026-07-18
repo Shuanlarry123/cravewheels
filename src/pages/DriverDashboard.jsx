@@ -5,8 +5,9 @@ import DriverLayout from "@/components/DriverLayout";
 import DriverOnboarding from "@/components/driver/DriverOnboarding";
 import AvailableDeliveries from "@/components/driver/AvailableDeliveries";
 import ActiveDeliveryCard from "@/components/driver/ActiveDeliveryCard";
+import DriverStats from "@/components/driver/DriverStats";
 import MapboxMap from "@/components/MapboxMap";
-import { Power, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function DriverDashboard() {
@@ -71,22 +72,6 @@ export default function DriverDashboard() {
     const id = setInterval(() => getUserLocation().then(setLocation), 15000);
     return () => clearInterval(id);
   }, [profile?.is_available]);
-
-  const toggleOnline = async () => {
-    setBusy(true);
-    try {
-      const updated = await base44.entities.DriverProfile.update(profile.id, {
-        is_available: !profile.is_available,
-      });
-      setProfile({ ...profile, ...updated });
-      if (!profile.is_available) getUserLocation().then(setLocation);
-      toast.success(updated.is_available ? "You are now online" : "You are now offline");
-    } catch {
-      toast.error("Failed to update status");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {
@@ -185,30 +170,9 @@ export default function DriverDashboard() {
           )}
         </div>
 
-        {/* Top floating bar */}
-        <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/80 to-transparent pb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold">Driver</p>
-              <p className="text-[11px] text-muted-foreground capitalize">
-                {profile.vehicle_type} · {user?.full_name || ""}
-              </p>
-            </div>
-            <button
-              onClick={toggleOnline}
-              disabled={!profile.is_approved || busy}
-              className={`h-9 px-3 rounded-full text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50 ${
-                profile.is_available ? "bg-green-500 text-white" : "bg-card border border-border text-muted-foreground"
-              }`}
-            >
-              <Power className="w-3.5 h-3.5" /> {profile.is_available ? "Online" : "Offline"}
-            </button>
-          </div>
-          {!profile.is_approved && (
-            <p className="mt-2 text-[11px] text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-2 py-1 inline-block">
-              Pending admin approval
-            </p>
-          )}
+        {/* Top floating stats bar */}
+        <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/85 to-transparent pb-8">
+          <DriverStats statsOnly profile={profile} />
         </div>
 
         {/* Bottom sheet with oncoming orders / active delivery */}

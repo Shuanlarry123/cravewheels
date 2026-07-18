@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, User } from "lucide-react";
+import { Navigation, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { to: "/driver", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/driver", icon: Navigation, label: "On Road" },
   { to: "/driver/profile", icon: User, label: "Profile" },
 ];
 

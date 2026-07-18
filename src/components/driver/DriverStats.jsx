@@ -2,7 +2,7 @@ import React from "react";
 import { Wallet, Package, Star, Power } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function DriverStats({ profile, onToggleOnline }) {
+export default function DriverStats({ profile, onToggleOnline, statsOnly }) {
   const approved = profile?.is_approved;
   return (
     <div>
@@ -16,6 +16,7 @@ export default function DriverStats({ profile, onToggleOnline }) {
         <Stat icon={Package} label="Deliveries" value={profile?.total_deliveries || 0} />
         <Stat icon={Star} label="Rating" value={profile?.rating?.toFixed(1) || "5.0"} />
       </div>
+      {!statsOnly && (
       <button
         onClick={onToggleOnline}
         disabled={!approved}
@@ -30,6 +31,7 @@ export default function DriverStats({ profile, onToggleOnline }) {
         <Power className="w-4 h-4" />
         {profile?.is_available ? "Online — Accepting Deliveries" : "Go Online"}
       </button>
+      )}
     </div>
   );
 }
