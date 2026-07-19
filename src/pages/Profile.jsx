@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Receipt, LogOut, ChevronRight, Settings as SettingsIcon, Info } from "lucide-react";
+import { Receipt, LogOut, ChevronRight, Settings as SettingsIcon, Info, ShieldCheck } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 
@@ -49,6 +49,12 @@ function ProfileInner() {
         <Link to="/about" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 mb-3 active:scale-[0.99] transition-transform">
           <Info className="w-5 h-5 text-primary" />
           <span className="flex-1 font-medium text-sm">About CraveReel</span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
+
+        <Link to="/privacy" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 mb-3 active:scale-[0.99] transition-transform">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+          <span className="flex-1 font-medium text-sm">Privacy & Security</span>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </Link>
 

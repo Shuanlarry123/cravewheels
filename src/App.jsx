@@ -28,6 +28,8 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import Apply from '@/pages/Apply';
+import Privacy from '@/pages/Privacy';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -72,6 +74,8 @@ const AuthenticatedApp = () => {
       <Route path="/driver/profile" element={<RoleGate requiredRole="driver"><DriverProfile /></RoleGate>} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/about" element={<About />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/apply/:type" element={<Apply />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/restaurant-dashboard" element={<RoleGate requiredRole="restaurant"><RestaurantDashboard /></RoleGate>} />
       <Route path="/creator-dashboard" element={<RoleGate requiredRole="creator"><CreatorDashboard /></RoleGate>} />

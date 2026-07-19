@@ -1,6 +1,6 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Video, Search, ShoppingBag, Receipt, Bike, Sparkles } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Video, Search, ShoppingBag, Receipt, Bike, Sparkles, Store, ShieldCheck } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 
@@ -12,6 +12,24 @@ const SECTIONS = [
   { icon: Bike, title: "Driver Dashboard", desc: "Drivers go online, accept deliveries, follow turn-by-turn navigation, and verify orders at pickup." },
   { icon: Sparkles, title: "Creator Referrals", desc: "Creators earn commissions when dishes they share get ordered using their referral code." },
 ];
+
+function ApplyRow({ to, icon: Icon, title, desc }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform"
+    >
+      <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-primary" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+    </Link>
+  );
+}
 
 function AboutInner() {
   const navigate = useNavigate();
@@ -51,7 +69,20 @@ function AboutInner() {
           ))}
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-8">Made with 🔥 on CraveReel</p>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1 mt-8">Join CraveReel</h2>
+        <div className="space-y-3 mb-6">
+          <ApplyRow to="/apply/driver" icon={Bike} title="Apply as a Driver" desc="Deliver food and earn on your schedule." />
+          <ApplyRow to="/apply/restaurant" icon={Store} title="Apply as a Restaurant" desc="List your dishes and reach hungry customers." />
+          <ApplyRow to="/apply/influencer" icon={Sparkles} title="Apply as an Influencer" desc="Share dishes and earn commission per order." />
+        </div>
+
+        <Link to="/privacy" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 mb-6 active:scale-[0.99] transition-transform">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+          <span className="flex-1 text-sm font-medium">Privacy & Security Policy</span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
+
+        <p className="text-center text-xs text-muted-foreground">Made with 🔥 on CraveReel</p>
       </div>
     </CustomerLayout>
   );
