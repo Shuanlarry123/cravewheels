@@ -10,6 +10,7 @@ export const setRole = (r) => localStorage.setItem(ROLE_KEY, r);
 export function roleHome(role) {
   if (role === "driver") return "/driver";
   if (role === "restaurant") return "/restaurant-dashboard";
+  if (role === "creator") return "/creator-dashboard";
   return "/";
 }
 
