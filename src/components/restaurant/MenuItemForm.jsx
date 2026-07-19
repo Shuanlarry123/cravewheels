@@ -59,7 +59,16 @@ export default function MenuItemForm({ restaurant, onCreated }) {
         <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Description" rows={2} className="w-full rounded-xl bg-background border border-border p-3 text-sm" />
         <div className="grid grid-cols-2 gap-2">
           <input value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="Price ($)" type="number" inputMode="decimal" className={inputCls} />
-          <input value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="Category" className={inputCls} />
+          <select
+            value={form.category}
+            onChange={(e) => set("category", e.target.value)}
+            className={inputCls}
+          >
+            <option value="">Select category…</option>
+            {["Breakfast", "Lunch", "Dinner", "Specials", "Desserts", "Drinks", "Bowls", "Other"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
         <input value={form.thumbnail_url} onChange={(e) => set("thumbnail_url", e.target.value)} placeholder="Thumbnail URL (optional)" className={inputCls} />
         <button onClick={submit} disabled={saving} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">

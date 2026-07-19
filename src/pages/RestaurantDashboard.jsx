@@ -1,21 +1,39 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ChevronLeft, Video, CheckCircle2 } from "lucide-react";
+import {
+  ChevronLeft,
+  CheckCircle2,
+  LayoutDashboard,
+  Utensils,
+  ShoppingBag,
+  Settings as SettingsIcon,
+  Plus,
+} from "lucide-react";
 import RestaurantOnboarding from "@/components/restaurant/RestaurantOnboarding";
 import RestaurantProfileForm from "@/components/restaurant/RestaurantProfileForm";
 import MenuItemForm from "@/components/restaurant/MenuItemForm";
 import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
+import RestaurantStats from "@/components/restaurant/RestaurantStats";
+import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import { toast } from "react-hot-toast";
+import { cn } from "@/lib/utils";
+
+const TABS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "menu", label: "Menu", icon: Utensils },
+  { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "profile", label: "Profile", icon: SettingsIcon },
+];
 
 export default function RestaurantDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState("overview");
 
   const loadMenu = useCallback(async (rid) => {
     setMenuItems(await base44.entities.MenuItem.filter({ restaurant_id: rid }, "-created_date", 100));
@@ -30,7 +48,6 @@ export default function RestaurantDashboard() {
     (async () => {
       try {
         const u = await base44.auth.me();
-        setUser(u);
         const mine = await base44.entities.Restaurant.filter({ created_by_id: u.id });
         const r = mine[0] || null;
         setRestaurant(r);
@@ -85,10 +102,12 @@ export default function RestaurantDashboard() {
     );
   }
 
+  const recent = orders.slice(0, 5);
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-md px-4 pt-8 pb-12">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+    <div className="min-h-screen bg-background text-foreground pb-24">
+      <div className="mx-auto max-w-md px-4 pt-6">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
         <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -101,47 +120,93 @@ export default function RestaurantDashboard() {
             <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/15 text-yellow-400 font-semibold">Pending</span>
           )}
         </div>
-        <p className="text-sm text-muted-foreground mb-6">Manage your restaurant</p>
+        <p className="text-sm text-muted-foreground mb-4">Manage your restaurant</p>
 
         {!restaurant.is_approved && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 mb-6 text-xs text-yellow-300">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 mb-4 text-xs text-yellow-300">
             Your restaurant is pending admin approval. Customers won't see it until approved.
           </div>
         )}
 
-        <RestaurantProfileForm restaurant={restaurant} onSaved={setRestaurant} />
-        <MenuItemForm restaurant={restaurant} onCreated={() => loadMenu(restaurant.id)} />
-
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
-          Menu ({menuItems.length})
-        </h2>
-        {menuItems.length === 0 ? (
-          <p className="text-sm text-muted-foreground px-1 mb-6">No menu items yet.</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            {menuItems.map((m) => (
-              <div key={m.id} className="bg-card border border-border rounded-2xl overflow-hidden">
-                <div className="h-24 bg-muted relative">
-                  {m.thumbnail_url ? (
-                    <img src={m.thumbnail_url} className="w-full h-full object-cover" alt={m.name} />
-                  ) : m.video_url ? (
-                    <video src={m.video_url} muted className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Video className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <p className="text-sm font-semibold line-clamp-1">{m.name}</p>
-                  <p className="text-xs text-muted-foreground">${(m.price || 0).toFixed(2)}</p>
-                </div>
-              </div>
+        {/* Tab bar */}
+        <div className="sticky top-0 z-20 -mx-4 px-4 pb-2 pt-1 bg-background/95 backdrop-blur">
+          <div className="flex gap-1 bg-card border border-border rounded-2xl p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-[11px] font-medium transition-colors",
+                  tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                )}
+              >
+                <t.icon className="w-4 h-4" />
+                {t.label}
+              </button>
             ))}
           </div>
-        )}
+        </div>
 
-        <RestaurantOrders orders={orders} onAdvance={advanceOrder} busy={busy} />
+        <div className="mt-4">
+          {tab === "overview" && (
+            <div className="space-y-4">
+              <RestaurantStats orders={orders} menuCount={menuItems.length} />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent Orders</h2>
+                  <button onClick={() => setTab("orders")} className="text-xs text-primary font-medium">
+                    View all
+                  </button>
+                </div>
+                {recent.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No orders yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {recent.map((o) => (
+                      <div key={o.id} className="bg-card border border-border rounded-2xl p-3 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary font-semibold capitalize">
+                            {o.status.replace("_", " ")}
+                          </span>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {(o.items || []).length} item(s)
+                          </p>
+                        </div>
+                        <span className="text-sm font-bold">${(o.total_amount || 0).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setTab("menu")}
+                className="w-full h-11 rounded-xl bg-primary/15 text-primary font-semibold text-sm flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Add a video menu item
+              </button>
+            </div>
+          )}
+
+          {tab === "menu" && (
+            <div className="space-y-4">
+              <MenuItemForm restaurant={restaurant} onCreated={() => loadMenu(restaurant.id)} />
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
+                  Menu ({menuItems.length})
+                </h2>
+                <RestaurantMenuGrid items={menuItems} onChanged={() => loadMenu(restaurant.id)} />
+              </div>
+            </div>
+          )}
+
+          {tab === "orders" && (
+            <RestaurantOrders orders={orders} onAdvance={advanceOrder} busy={busy} />
+          )}
+
+          {tab === "profile" && (
+            <RestaurantProfileForm restaurant={restaurant} onSaved={setRestaurant} />
+          )}
+        </div>
       </div>
     </div>
   );
