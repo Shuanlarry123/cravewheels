@@ -24,6 +24,10 @@ import DiscoveryMap from '@/pages/DiscoveryMap';
 import DriverProfile from '@/pages/DriverProfile';
 import RoleGate from '@/components/RoleGate';
 import CreatorDashboard from '@/pages/CreatorDashboard';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -52,6 +56,10 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<Feed />} />
       <Route path="/item/:id" element={<ItemDetail />} />
       <Route path="/restaurant/:id" element={<RestaurantProfile />} />
