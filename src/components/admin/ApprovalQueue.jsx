@@ -1,14 +1,23 @@
 import React, { useState } from "react";
-import { Store, Bike, Check, MapPin, Phone } from "lucide-react";
+import { Store, Bike, Sparkles, Check, MapPin, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "all", label: "All" },
   { id: "restaurant", label: "Restaurants" },
   { id: "driver", label: "Drivers" },
+  { id: "creator", label: "Influencers" },
 ];
 
-export default function ApprovalQueue({ restaurants, drivers, onApproveRestaurant, onApproveDriver, busy }) {
+export default function ApprovalQueue({
+  restaurants,
+  drivers,
+  creators,
+  onApproveRestaurant,
+  onApproveDriver,
+  onApproveCreator,
+  busy,
+}) {
   const [filter, setFilter] = useState("all");
 
   const restItems = restaurants
@@ -29,16 +38,34 @@ export default function ApprovalQueue({ restaurants, drivers, onApproveRestauran
       lines: [`License: ${d.license_number || "—"}`],
       meta: `Rating ${(d.rating || 5).toFixed(1)}`,
     }));
+  const creatorItems = (creators || [])
+    .filter((c) => c.status === "pending")
+    .map((c) => ({
+      type: "creator",
+      id: c.id,
+      title: c.social_handle || c.referral_code,
+      lines: [`Code: ${c.referral_code}`, c.bio].filter(Boolean),
+      meta: `${c.follower_count || 0} followers`,
+    }));
 
-  const all = [...restItems, ...driverItems];
-  const counts = { all: all.length, restaurant: restItems.length, driver: driverItems.length };
+  const all = [...restItems, ...driverItems, ...creatorItems];
+  const counts = {
+    all: all.length,
+    restaurant: restItems.length,
+    driver: driverItems.length,
+    creator: creatorItems.length,
+  };
   const shown = filter === "all" ? all : all.filter((i) => i.type === filter);
 
   const approve = (item) =>
-    item.type === "restaurant" ? onApproveRestaurant(item.id) : onApproveDriver(item.id);
+    item.type === "restaurant"
+      ? onApproveRestaurant(item.id)
+      : item.type === "driver"
+      ? onApproveDriver(item.id)
+      : onApproveCreator(item.id);
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="flex items-center justify-between mb-3 px-1">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Approval Queue</h2>
         {counts.all > 0 && (
@@ -68,12 +95,17 @@ export default function ApprovalQueue({ restaurants, drivers, onApproveRestauran
       ) : (
         <div className="space-y-2">
           {shown.map((item) => (
-            <div key={`${item.type}-${item.id}`} className="bg-card border border-border rounded-2xl p-3 flex items-start gap-3">
+            <div
+              key={`${item.type}-${item.id}`}
+              className="bg-card border border-border rounded-2xl p-3 flex items-start gap-3"
+            >
               <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
                 {item.type === "restaurant" ? (
                   <Store className="w-5 h-5 text-primary" />
-                ) : (
+                ) : item.type === "driver" ? (
                   <Bike className="w-5 h-5 text-primary" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-primary" />
                 )}
               </div>
               <div className="flex-1 min-w-0">

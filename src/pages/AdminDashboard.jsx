@@ -1,43 +1,55 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ChevronLeft, Store, Users, Package, Layers, X, Bike } from "lucide-react";
-import AdminLiveMap from "@/components/admin/AdminLiveMap";
-import RestaurantPreview from "@/components/admin/RestaurantPreview";
-import UserPreview from "@/components/admin/UserPreview";
-import DeliveryPreview from "@/components/admin/DeliveryPreview";
+import {
+  Menu,
+  LayoutDashboard,
+  Globe,
+  Users,
+  Store,
+  Bike,
+  Sparkles,
+  ShoppingBag,
+  DollarSign,
+  Layers,
+} from "lucide-react";
+import AdminSidebar from "@/components/admin/AdminSidebar";
+import AdminOverview from "@/components/admin/AdminOverview";
+import AdminMapSection from "@/components/admin/AdminMapSection";
+import AdminUsers from "@/components/admin/AdminUsers";
+import AdminRestaurants from "@/components/admin/AdminRestaurants";
+import AdminDrivers from "@/components/admin/AdminDrivers";
+import AdminInfluencers from "@/components/admin/AdminInfluencers";
+import AdminOrders from "@/components/admin/AdminOrders";
+import AdminRevenue from "@/components/admin/AdminRevenue";
 import ApprovalQueue from "@/components/admin/ApprovalQueue";
 import { toast } from "react-hot-toast";
 
-const ACTIVE_STATUSES = ["confirmed", "preparing", "picked_up"];
-
 export default function AdminDashboard() {
-  const navigate = useNavigate();
+  const [section, setSection] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [restaurants, setRestaurants] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [creators, setCreators] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [active, setActive] = useState(null);
-  const [showQueue, setShowQueue] = useState(false);
 
   const load = useCallback(async () => {
-    const [r, d, o] = await Promise.all([
+    const [r, d, c, o] = await Promise.all([
       base44.entities.Restaurant.list("-created_date", 200),
       base44.entities.DriverProfile.list("-created_date", 200),
+      base44.entities.CreatorProfile.list("-created_date", 200),
       base44.entities.Order.list("-created_date", 200),
     ]);
     setRestaurants(r);
     setDrivers(d);
+    setCreators(c);
     setOrders(o);
     try {
       const me = await base44.auth.me();
-      if (me.role === "admin") {
-        const us = await base44.entities.User.list("-created_date", 200);
-        setUsers(us);
-      }
+      if (me.role === "admin") setUsers(await base44.entities.User.list("-created_date", 200));
     } catch {
       /* non-admin: users unavailable */
     }
@@ -59,10 +71,11 @@ export default function AdminDashboard() {
     return unsub;
   }, []);
 
-  // poll online driver locations for live movement
   useEffect(() => {
     const id = setInterval(() => {
-      base44.entities.DriverProfile.filter({ is_available: true }, "-updated_date", 100).then(setDrivers).catch(() => {});
+      base44.entities.DriverProfile.filter({ is_available: true }, "-updated_date", 100)
+        .then(setDrivers)
+        .catch(() => {});
     }, 15000);
     return () => clearInterval(id);
   }, []);
@@ -79,7 +92,6 @@ export default function AdminDashboard() {
       setBusy(false);
     }
   };
-
   const approveDriver = async (id) => {
     setBusy(true);
     try {
@@ -90,48 +102,43 @@ export default function AdminDashboard() {
       setBusy(false);
     }
   };
-
-  const restaurantById = Object.fromEntries(restaurants.map((r) => [r.id, r]));
-  const usersById = Object.fromEntries(users.map((u) => [u.id, u]));
-  const driverByUserId = Object.fromEntries(drivers.map((d) => [d.created_by_id, d]));
-
-  const approvedRestaurants = restaurants.filter((r) => r.is_approved && r.latitude != null && r.longitude != null);
-  const onlineDrivers = drivers.filter((d) => d.is_available && d.latitude != null && d.longitude != null);
-  const activeOrders = orders.filter((o) => ACTIVE_STATUSES.includes(o.status));
-
-  // ongoing deliveries placed at their restaurant pickup location
-  const mapDeliveries = activeOrders
-    .map((o) => {
-      const r = restaurantById[o.restaurant_id];
-      return {
-        ...o,
-        restaurant: r,
-        driver: driverByUserId[o.driver_id],
-        customer: usersById[o.created_by_id],
-        latitude: r?.latitude,
-        longitude: r?.longitude,
-      };
-    })
-    .filter((o) => o.latitude != null && o.longitude != null);
-
-  // active users = customers with an active order, shown at their delivery destination
-  const customerMap = {};
-  activeOrders.forEach((o) => {
-    const cid = o.created_by_id;
-    if (cid && !customerMap[cid]) {
-      customerMap[cid] = {
-        user: usersById[cid],
-        order: o,
-        restaurant: restaurantById[o.restaurant_id],
-        latitude: o.latitude,
-        longitude: o.longitude,
-      };
+  const approveCreator = async (id) => {
+    setBusy(true);
+    try {
+      await base44.entities.CreatorProfile.update(id, { status: "active" });
+      toast.success("Influencer approved");
+      await load();
+    } finally {
+      setBusy(false);
     }
-  });
-  const mapUsers = Object.values(customerMap).filter((u) => u.latitude != null && u.longitude != null);
+  };
+  const suspendCreator = async (id) => {
+    setBusy(true);
+    try {
+      await base44.entities.CreatorProfile.update(id, { status: "suspended" });
+      toast.success("Influencer suspended");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const pendingCount =
-    restaurants.filter((r) => !r.is_approved).length + drivers.filter((d) => !d.is_approved).length;
+    restaurants.filter((r) => !r.is_approved).length +
+    drivers.filter((d) => !d.is_approved).length +
+    creators.filter((c) => c.status === "pending").length;
+
+  const sections = [
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "map", label: "Live Map", icon: Globe },
+    { id: "users", label: "Users", icon: Users },
+    { id: "restaurants", label: "Restaurants", icon: Store },
+    { id: "drivers", label: "Drivers", icon: Bike },
+    { id: "influencers", label: "Influencers", icon: Sparkles },
+    { id: "orders", label: "Orders", icon: ShoppingBag },
+    { id: "revenue", label: "Revenue", icon: DollarSign },
+    { id: "queue", label: "Approval Queue", icon: Layers, badge: pendingCount || undefined },
+  ];
 
   if (loading) {
     return (
@@ -141,116 +148,74 @@ export default function AdminDashboard() {
     );
   }
 
+  const data = { restaurants, drivers, creators, orders, users, token };
+  const activeLabel = sections.find((s) => s.id === section)?.label;
+
   return (
-    <div className="relative w-full h-[100dvh] bg-background overflow-hidden">
-      <div className="absolute inset-0">
-        {token ? (
-          <AdminLiveMap
-            token={token}
-            restaurants={approvedRestaurants}
-            drivers={onlineDrivers}
-            users={mapUsers}
-            deliveries={mapDeliveries}
-            onSelectRestaurant={(r) => setActive({ type: "restaurant", data: r })}
-            onSelectUser={(u) => setActive({ type: "user", data: u })}
-            onSelectDelivery={(o) => setActive({ type: "delivery", data: o })}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">Loading map…</div>
-        )}
-      </div>
+    <div className="h-[100dvh] bg-background text-foreground flex overflow-hidden">
+      <AdminSidebar
+        sections={sections}
+        active={section}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onSelect={(id) => {
+          setSection(id);
+          setSidebarOpen(false);
+        }}
+      />
 
-      {/* Top overlay */}
-      <div className="absolute top-0 inset-x-0 z-10 p-3 bg-gradient-to-b from-background/90 to-transparent pb-8">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <div className="md:hidden flex items-center gap-2 p-3 border-b border-border">
           <button
-            onClick={() => navigate(-1)}
-            className="h-9 w-9 rounded-full bg-card/90 border border-border flex items-center justify-center"
+            onClick={() => setSidebarOpen(true)}
+            className="h-9 w-9 rounded-xl bg-card border border-border flex items-center justify-center"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <Menu className="w-4 h-4" />
           </button>
-          <h1 className="text-base font-bold">Global Map</h1>
-          <button
-            onClick={() => setShowQueue(true)}
-            className="ml-auto h-9 px-3 rounded-full bg-card/90 border border-border flex items-center gap-1.5 text-xs font-semibold"
-          >
-            <Layers className="w-4 h-4" /> Queue
-            {pendingCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-yellow-500 text-black text-[10px] font-bold">{pendingCount}</span>
-            )}
-          </button>
+          <span className="font-semibold">{activeLabel}</span>
         </div>
-        <div className="flex gap-2">
-          <Count icon={Store} label="Restaurants" value={approvedRestaurants.length} color="#FF6B2C" />
-          <Count icon={Users} label="Active Users" value={mapUsers.length} color="#a855f7" />
-          <Count icon={Package} label="Deliveries" value={mapDeliveries.length} color="#3b82f6" />
-        </div>
-      </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-3 left-3 z-10 bg-card/90 border border-border rounded-xl p-2 space-y-1 text-[11px]">
-        <Legend emoji="🍴" color="#FF6B2C" label="Restaurant — tap to view" />
-        <Legend emoji="👤" color="#a855f7" label="Active user — tap to view" />
-        <Legend emoji="📦" color="#3b82f6" label="Ongoing delivery — tap to view" />
-        <Legend emoji="🛵" color="#22c55e" label="Online driver" />
-      </div>
-
-      {active?.type === "restaurant" && <RestaurantPreview restaurant={active.data} onClose={() => setActive(null)} />}
-      {active?.type === "user" && <UserPreview data={active.data} onClose={() => setActive(null)} />}
-      {active?.type === "delivery" && <DeliveryPreview data={active.data} onClose={() => setActive(null)} />}
-
-      {showQueue && (
-        <div className="absolute inset-0 z-30 bg-black/50" onClick={() => setShowQueue(false)}>
-          <div
-            className="absolute bottom-0 inset-x-0 bg-background rounded-t-3xl border-t border-border max-h-[82%] overflow-y-auto no-scrollbar p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold">Approval Queue</h2>
-              <button
-                onClick={() => setShowQueue(false)}
-                className="h-8 w-8 rounded-full bg-card border border-border flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        <div className="flex-1 min-h-0">
+          {section === "map" ? (
+            <div className="h-full">
+              <AdminMapSection data={data} />
             </div>
-            <ApprovalQueue
-              restaurants={restaurants}
-              drivers={drivers}
-              onApproveRestaurant={approveRestaurant}
-              onApproveDriver={approveDriver}
-              busy={busy}
-            />
-          </div>
+          ) : (
+            <main className="h-full overflow-y-auto p-4 md:p-6">
+              <div className="max-w-5xl mx-auto">
+                <h1 className="text-2xl font-bold mb-4">{activeLabel}</h1>
+                {section === "overview" && <AdminOverview data={data} onGo={setSection} />}
+                {section === "users" && <AdminUsers users={users} />}
+                {section === "restaurants" && (
+                  <AdminRestaurants restaurants={restaurants} orders={orders} onApprove={approveRestaurant} busy={busy} />
+                )}
+                {section === "drivers" && <AdminDrivers drivers={drivers} onApprove={approveDriver} busy={busy} />}
+                {section === "influencers" && (
+                  <AdminInfluencers
+                    creators={creators}
+                    onApprove={approveCreator}
+                    onSuspend={suspendCreator}
+                    busy={busy}
+                  />
+                )}
+                {section === "orders" && <AdminOrders orders={orders} restaurants={restaurants} users={users} />}
+                {section === "revenue" && <AdminRevenue orders={orders} restaurants={restaurants} creators={creators} />}
+                {section === "queue" && (
+                  <ApprovalQueue
+                    restaurants={restaurants}
+                    drivers={drivers}
+                    creators={creators}
+                    onApproveRestaurant={approveRestaurant}
+                    onApproveDriver={approveDriver}
+                    onApproveCreator={approveCreator}
+                    busy={busy}
+                  />
+                )}
+              </div>
+            </main>
+          )}
         </div>
-      )}
-    </div>
-  );
-}
-
-function Count({ icon: Icon, label, value, color }) {
-  return (
-    <div className="flex-1 bg-card/90 border border-border rounded-xl p-2 flex items-center gap-2">
-      <Icon className="w-4 h-4 shrink-0" style={{ color }} />
-      <div className="min-w-0">
-        <p className="text-sm font-bold leading-none">{value}</p>
-        <p className="text-[10px] text-muted-foreground truncate">{label}</p>
       </div>
-    </div>
-  );
-}
-
-function Legend({ emoji, color, label }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className="w-4 h-4 rounded-full flex items-center justify-center text-[9px]"
-        style={{ background: color }}
-      >
-        {emoji}
-      </span>
-      <span className="text-muted-foreground">{label}</span>
     </div>
   );
 }
