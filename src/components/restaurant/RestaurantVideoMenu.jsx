@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Star, Flame } from "lucide-react";
+import { Star, Flame, Sunrise, Sun, Moon, Sparkles, IceCream, CupSoda, Salad, Utensils } from "lucide-react";
 
 const CATEGORY_ORDER = [
   "Breakfast",
@@ -12,6 +12,25 @@ const CATEGORY_ORDER = [
   "Bowls",
   "Other",
 ];
+
+const CATEGORY_META = {
+  Breakfast: { icon: Sunrise },
+  Lunch: { icon: Sun },
+  Dinner: { icon: Moon },
+  Specials: { icon: Sparkles },
+  Desserts: { icon: IceCream },
+  Drinks: { icon: CupSoda },
+  Bowls: { icon: Salad },
+  Other: { icon: Utensils },
+};
+
+function nowCategory() {
+  const h = new Date().getHours();
+  if (h < 11) return "Breakfast";
+  if (h < 16) return "Lunch";
+  if (h < 21) return "Dinner";
+  return "Specials";
+}
 
 function AutoplayVideo({ item }) {
   const ref = useRef(null);
@@ -73,13 +92,18 @@ function VideoCard({ item }) {
   );
 }
 
-function Section({ title, subtitle, icon: Icon, items }) {
+function Section({ title, subtitle, icon: Icon, items, highlight }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
         <h3 className="text-sm font-bold flex items-center gap-1.5">
           {Icon && <Icon className="w-4 h-4 text-primary" />}
           {title}
+          {highlight && (
+            <span className="text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+              Now
+            </span>
+          )}
         </h3>
         {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
       </div>
@@ -109,12 +133,14 @@ export default function RestaurantVideoMenu({ items }) {
     (grouped[c] = grouped[c] || []).push(i);
   });
 
+  const nowCat = nowCategory();
   const ordered = CATEGORY_ORDER.filter((c) => grouped[c]);
   const extra = Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c));
+  const all = [...ordered, ...extra];
   const sections = [
-    ...ordered.map((c) => ({ title: c, items: grouped[c] })),
-    ...extra.map((c) => ({ title: c, items: grouped[c] })),
-  ];
+    ...all.filter((c) => c === nowCat),
+    ...all.filter((c) => c !== nowCat),
+  ].map((c) => ({ title: c, items: grouped[c], highlight: c === nowCat }));
 
   return (
     <div className="space-y-6">
@@ -127,7 +153,13 @@ export default function RestaurantVideoMenu({ items }) {
         />
       )}
       {sections.map((s) => (
-        <Section key={s.title} title={s.title} items={s.items} />
+        <Section
+          key={s.title}
+          title={s.title}
+          icon={CATEGORY_META[s.title]?.icon}
+          highlight={s.highlight}
+          items={s.items}
+        />
       ))}
     </div>
   );
