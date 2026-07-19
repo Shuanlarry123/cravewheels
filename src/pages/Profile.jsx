@@ -34,13 +34,11 @@ function ProfileInner() {
           <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
 
-        {user.role === "admin" && (
-          <Link to="/admin-dashboard" className="flex items-center gap-3 bg-primary/15 border border-primary/30 rounded-2xl p-4 mb-3 active:scale-[0.99] transition-transform">
-            <Shield className="w-5 h-5 text-primary" />
-            <span className="flex-1 font-medium text-sm">Admin Dashboard</span>
-            <ChevronRight className="w-4 h-4 text-primary" />
-          </Link>
-        )}
+        <Link to="/admin-dashboard" className="flex items-center gap-3 bg-primary/15 border border-primary/30 rounded-2xl p-4 mb-3 active:scale-[0.99] transition-transform">
+          <Shield className="w-5 h-5 text-primary" />
+          <span className="flex-1 font-medium text-sm">Admin Dashboard</span>
+          <ChevronRight className="w-4 h-4 text-primary" />
+        </Link>
 
         <Link to="/orders" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 mb-3 active:scale-[0.99] transition-transform">
           <Receipt className="w-5 h-5 text-primary" />
