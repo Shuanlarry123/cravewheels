@@ -1,21 +1,26 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ChevronLeft, Store, Bike, Package, Layers, X } from "lucide-react";
+import { ChevronLeft, Store, Users, Package, Layers, X, Bike } from "lucide-react";
 import AdminLiveMap from "@/components/admin/AdminLiveMap";
 import RestaurantPreview from "@/components/admin/RestaurantPreview";
+import UserPreview from "@/components/admin/UserPreview";
+import DeliveryPreview from "@/components/admin/DeliveryPreview";
 import ApprovalQueue from "@/components/admin/ApprovalQueue";
 import { toast } from "react-hot-toast";
+
+const ACTIVE_STATUSES = ["confirmed", "preparing", "picked_up"];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [restaurants, setRestaurants] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [selected, setSelected] = useState(null);
+  const [active, setActive] = useState(null);
   const [showQueue, setShowQueue] = useState(false);
 
   const load = useCallback(async () => {
@@ -27,6 +32,15 @@ export default function AdminDashboard() {
     setRestaurants(r);
     setDrivers(d);
     setOrders(o);
+    try {
+      const me = await base44.auth.me();
+      if (me.role === "admin") {
+        const us = await base44.entities.User.list("-created_date", 200);
+        setUsers(us);
+      }
+    } catch {
+      /* non-admin: users unavailable */
+    }
   }, []);
 
   useEffect(() => {
@@ -77,11 +91,45 @@ export default function AdminDashboard() {
     }
   };
 
-  const approvedRestaurants = restaurants.filter((r) => r.is_approved);
-  const onlineDrivers = drivers.filter((d) => d.is_available);
-  const activeDeliveries = orders.filter((o) =>
-    ["confirmed", "preparing", "picked_up"].includes(o.status) && o.driver_id
-  );
+  const restaurantById = Object.fromEntries(restaurants.map((r) => [r.id, r]));
+  const usersById = Object.fromEntries(users.map((u) => [u.id, u]));
+  const driverByUserId = Object.fromEntries(drivers.map((d) => [d.created_by_id, d]));
+
+  const approvedRestaurants = restaurants.filter((r) => r.is_approved && r.latitude != null && r.longitude != null);
+  const onlineDrivers = drivers.filter((d) => d.is_available && d.latitude != null && d.longitude != null);
+  const activeOrders = orders.filter((o) => ACTIVE_STATUSES.includes(o.status));
+
+  // ongoing deliveries placed at their restaurant pickup location
+  const mapDeliveries = activeOrders
+    .map((o) => {
+      const r = restaurantById[o.restaurant_id];
+      return {
+        ...o,
+        restaurant: r,
+        driver: driverByUserId[o.driver_id],
+        customer: usersById[o.created_by_id],
+        latitude: r?.latitude,
+        longitude: r?.longitude,
+      };
+    })
+    .filter((o) => o.latitude != null && o.longitude != null);
+
+  // active users = customers with an active order, shown at their delivery destination
+  const customerMap = {};
+  activeOrders.forEach((o) => {
+    const cid = o.created_by_id;
+    if (cid && !customerMap[cid]) {
+      customerMap[cid] = {
+        user: usersById[cid],
+        order: o,
+        restaurant: restaurantById[o.restaurant_id],
+        latitude: o.latitude,
+        longitude: o.longitude,
+      };
+    }
+  });
+  const mapUsers = Object.values(customerMap).filter((u) => u.latitude != null && u.longitude != null);
+
   const pendingCount =
     restaurants.filter((r) => !r.is_approved).length + drivers.filter((d) => !d.is_approved).length;
 
@@ -101,8 +149,11 @@ export default function AdminDashboard() {
             token={token}
             restaurants={approvedRestaurants}
             drivers={onlineDrivers}
-            deliveries={activeDeliveries}
-            onSelectRestaurant={setSelected}
+            users={mapUsers}
+            deliveries={mapDeliveries}
+            onSelectRestaurant={(r) => setActive({ type: "restaurant", data: r })}
+            onSelectUser={(u) => setActive({ type: "user", data: u })}
+            onSelectDelivery={(o) => setActive({ type: "delivery", data: o })}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">Loading map…</div>
@@ -112,10 +163,13 @@ export default function AdminDashboard() {
       {/* Top overlay */}
       <div className="absolute top-0 inset-x-0 z-10 p-3 bg-gradient-to-b from-background/90 to-transparent pb-8">
         <div className="flex items-center gap-2 mb-3">
-          <button onClick={() => navigate(-1)} className="h-9 w-9 rounded-full bg-card/90 border border-border flex items-center justify-center">
+          <button
+            onClick={() => navigate(-1)}
+            className="h-9 w-9 rounded-full bg-card/90 border border-border flex items-center justify-center"
+          >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-base font-bold">Live Map</h1>
+          <h1 className="text-base font-bold">Global Map</h1>
           <button
             onClick={() => setShowQueue(true)}
             className="ml-auto h-9 px-3 rounded-full bg-card/90 border border-border flex items-center gap-1.5 text-xs font-semibold"
@@ -128,19 +182,22 @@ export default function AdminDashboard() {
         </div>
         <div className="flex gap-2">
           <Count icon={Store} label="Restaurants" value={approvedRestaurants.length} color="#FF6B2C" />
-          <Count icon={Bike} label="Online Drivers" value={onlineDrivers.length} color="#22c55e" />
-          <Count icon={Package} label="Deliveries" value={activeDeliveries.length} color="#3b82f6" />
+          <Count icon={Users} label="Active Users" value={mapUsers.length} color="#a855f7" />
+          <Count icon={Package} label="Deliveries" value={mapDeliveries.length} color="#3b82f6" />
         </div>
       </div>
 
       {/* Legend */}
       <div className="absolute bottom-3 left-3 z-10 bg-card/90 border border-border rounded-xl p-2 space-y-1 text-[11px]">
         <Legend emoji="🍴" color="#FF6B2C" label="Restaurant — tap to view" />
+        <Legend emoji="👤" color="#a855f7" label="Active user — tap to view" />
+        <Legend emoji="📦" color="#3b82f6" label="Ongoing delivery — tap to view" />
         <Legend emoji="🛵" color="#22c55e" label="Online driver" />
-        <Legend emoji="📦" color="#3b82f6" label="Active delivery" />
       </div>
 
-      {selected && <RestaurantPreview restaurant={selected} onClose={() => setSelected(null)} />}
+      {active?.type === "restaurant" && <RestaurantPreview restaurant={active.data} onClose={() => setActive(null)} />}
+      {active?.type === "user" && <UserPreview data={active.data} onClose={() => setActive(null)} />}
+      {active?.type === "delivery" && <DeliveryPreview data={active.data} onClose={() => setActive(null)} />}
 
       {showQueue && (
         <div className="absolute inset-0 z-30 bg-black/50" onClick={() => setShowQueue(false)}>
@@ -151,7 +208,10 @@ export default function AdminDashboard() {
             <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-3" />
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold">Approval Queue</h2>
-              <button onClick={() => setShowQueue(false)} className="h-8 w-8 rounded-full bg-card border border-border flex items-center justify-center">
+              <button
+                onClick={() => setShowQueue(false)}
+                className="h-8 w-8 rounded-full bg-card border border-border flex items-center justify-center"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>

@@ -12,7 +12,16 @@ function makeMarker(color, emoji, onClick) {
   return el;
 }
 
-export default function AdminLiveMap({ token, restaurants, drivers, deliveries, onSelectRestaurant }) {
+export default function AdminLiveMap({
+  token,
+  restaurants,
+  drivers,
+  users,
+  deliveries,
+  onSelectRestaurant,
+  onSelectUser,
+  onSelectDelivery,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -41,7 +50,6 @@ export default function AdminLiveMap({ token, restaurants, drivers, deliveries, 
     if (!map) return;
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
-
     const points = [];
 
     restaurants.forEach((r) => {
@@ -62,9 +70,18 @@ export default function AdminLiveMap({ token, restaurants, drivers, deliveries, 
       points.push([d.longitude, d.latitude]);
     });
 
+    users.forEach((u) => {
+      if (u.latitude == null || u.longitude == null) return;
+      const m = new mapboxgl.Marker(makeMarker("#a855f7", "👤", () => onSelectUser?.(u)))
+        .setLngLat([u.longitude, u.latitude])
+        .addTo(map);
+      markersRef.current.push(m);
+      points.push([u.longitude, u.latitude]);
+    });
+
     deliveries.forEach((o) => {
       if (o.latitude == null || o.longitude == null) return;
-      const m = new mapboxgl.Marker(makeMarker("#3b82f6", "📦"))
+      const m = new mapboxgl.Marker(makeMarker("#3b82f6", "📦", () => onSelectDelivery?.(o)))
         .setLngLat([o.longitude, o.latitude])
         .addTo(map);
       markersRef.current.push(m);
@@ -77,7 +94,7 @@ export default function AdminLiveMap({ token, restaurants, drivers, deliveries, 
       map.fitBounds(bounds, { padding: 60, maxZoom: 12 });
       fitRef.current = true;
     }
-  }, [restaurants, drivers, deliveries, onSelectRestaurant]);
+  }, [restaurants, drivers, users, deliveries, onSelectRestaurant, onSelectUser, onSelectDelivery]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
