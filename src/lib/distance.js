@@ -15,10 +15,10 @@ export const estimateDeliveryMinutes = (km) => (km == null ? 25 : Math.round(15 
 
 export const getUserLocation = () =>
   new Promise((resolve) => {
-    if (!navigator.geolocation) return resolve({ lat: 40.7589, lng: -73.9851, fallback: true });
+    if (!navigator.geolocation) return resolve({ lat: 41.5, lng: -72.7, fallback: true });
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, fallback: false }),
-      () => resolve({ lat: 40.7589, lng: -73.9851, fallback: true }),
+      () => resolve({ lat: 41.5, lng: -72.7, fallback: true }),
       { timeout: 5000, enableHighAccuracy: false }
     );
   });

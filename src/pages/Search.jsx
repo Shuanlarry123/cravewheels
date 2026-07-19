@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Search as SearchIcon, Star, MapPin, ChevronRight } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import MapboxExploreMap from "@/components/MapboxExploreMap";
+import { getUserLocation } from "@/lib/distance";
 import { CartProvider } from "@/lib/cartContext";
 
 const CUISINES = ["All", "Burgers", "Pizza", "Sushi", "Salads", "Desserts", "Drinks", "Bowls"];
@@ -15,6 +16,7 @@ function SearchInner() {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [focusId, setFocusId] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -23,6 +25,7 @@ function SearchInner() {
         setRestaurants(r);
         const t = await base44.functions.invoke("getMapboxToken", {});
         setToken(t.data?.token || null);
+        getUserLocation().then(setUserLocation);
       } finally {
         setLoading(false);
       }
@@ -45,7 +48,14 @@ function SearchInner() {
       <div className="relative w-full h-[calc(100dvh-4rem)] overflow-hidden">
         <div className="absolute inset-0">
           {token && filtered.length > 0 ? (
-            <MapboxExploreMap token={token} restaurants={filtered} focusId={focusId} onSelect={setFocusId} />
+            <MapboxExploreMap
+              token={token}
+              restaurants={filtered}
+              focusId={focusId}
+              onSelect={setFocusId}
+              userLocation={userLocation}
+              centerOnUser
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
               {loading ? "Loading map..." : "No restaurants found"}

@@ -2,42 +2,54 @@ import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-export default function MapboxExploreMap({ token, restaurants, focusId, onSelect }) {
+// Connecticut centroid — used as the default map focus and geolocation fallback.
+const CT_CENTER = { lng: -72.7, lat: 41.5 };
+
+export default function MapboxExploreMap({ token, restaurants, focusId, onSelect, userLocation, centerOnUser }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
+  const userMarkerRef = useRef(null);
 
   useEffect(() => {
     if (!token || !containerRef.current || mapRef.current) return;
     mapboxgl.accessToken = token;
     const first = restaurants[0];
+    const center = centerOnUser
+      ? [CT_CENTER.lng, CT_CENTER.lat]
+      : first
+      ? [first.longitude, first.latitude]
+      : [CT_CENTER.lng, CT_CENTER.lat];
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: first ? [first.longitude, first.latitude] : [-73.9851, 40.7589],
-      zoom: 12,
+      center,
+      zoom: centerOnUser ? 8 : 12,
     });
     map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
     map.on("load", () => {
-      if (restaurants.length > 1) fitBounds(map, restaurants);
+      if (!centerOnUser && restaurants.length > 1) fitBounds(map, restaurants);
     });
     mapRef.current = map;
     return () => {
       map.remove();
       mapRef.current = null;
       markersRef.current = {};
+      userMarkerRef.current = null;
     };
   }, [token]);
 
-  function fitBounds(map, list) {
-    const bounds = list.reduce(
-      (b, r) => b.extend([r.longitude, r.latitude]),
-      new mapboxgl.LngLatBounds([list[0].longitude, list[0].latitude], [list[0].longitude, list[0].latitude])
+  function fitBounds(map, list, user) {
+    const points = list.map((r) => [r.longitude, r.latitude]);
+    if (user) points.push([user.lng, user.lat]);
+    const bounds = points.reduce(
+      (b, p) => b.extend(p),
+      new mapboxgl.LngLatBounds(points[0], points[0])
     );
     map.fitBounds(bounds, { padding: { top: 150, bottom: 230, left: 40, right: 40 }, maxZoom: 14 });
   }
 
-  // sync markers
+  // sync restaurant markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -65,7 +77,29 @@ export default function MapboxExploreMap({ token, restaurants, focusId, onSelect
     });
   }, [restaurants]);
 
-  // fly to selected
+  // user location marker + recenter
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !userLocation) return;
+    const lngLat = [userLocation.lng, userLocation.lat];
+    if (!userMarkerRef.current) {
+      const el = document.createElement("div");
+      el.style.cssText =
+        "width:18px;height:18px;border-radius:50%;background:#3B82F6;border:3px solid #fff;box-shadow:0 0 0 8px rgba(59,130,246,0.25);";
+      userMarkerRef.current = new mapboxgl.Marker(el).setLngLat(lngLat).addTo(map);
+    } else {
+      userMarkerRef.current.setLngLat(lngLat);
+    }
+
+    if (userLocation.fallback) return; // denied/unavailable → keep Connecticut default
+    if (restaurants.length > 1) {
+      fitBounds(map, restaurants, userLocation);
+    } else {
+      map.flyTo({ center: lngLat, zoom: 13, essential: true });
+    }
+  }, [userLocation]);
+
+  // fly to selected restaurant
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focusId) return;
