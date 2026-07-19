@@ -1,47 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Bike, ChevronLeft, ChevronRight, Shield, Store } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Info } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
-import { toast } from "react-hot-toast";
 
 function SettingsInner() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
-
-  const goDriver = async () => {
-    setSwitching(true);
-    try {
-      if (user.role !== "driver") {
-        await base44.auth.updateMe({ role: "driver" });
-      }
-      navigate("/driver");
-    } catch {
-      toast.error("Failed to switch to driver mode");
-    } finally {
-      setSwitching(false);
-    }
-  };
-
-  const goRestaurant = async () => {
-    setSwitching(true);
-    try {
-      if (user.role !== "restaurant") {
-        await base44.auth.updateMe({ role: "restaurant" });
-      }
-      navigate("/restaurant-dashboard");
-    } catch {
-      toast.error("Failed to switch to restaurant mode");
-    } finally {
-      setSwitching(false);
-    }
-  };
 
   if (!user)
     return (
@@ -52,9 +22,6 @@ function SettingsInner() {
       </CustomerLayout>
     );
 
-  const isDriver = user.role === "driver";
-  const isRestaurant = user.role === "restaurant";
-
   return (
     <CustomerLayout>
       <div className="px-4 pt-8 pb-24 min-h-screen">
@@ -63,63 +30,27 @@ function SettingsInner() {
         </button>
         <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <Store className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold">Restaurant Mode</p>
-              <p className="text-xs text-muted-foreground">Manage your menu, profile & orders</p>
-            </div>
-            {isRestaurant && (
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-semibold">Active</span>
-            )}
-          </div>
-          <button
-            onClick={goRestaurant}
-            disabled={switching}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {switching ? "Switching..." : isRestaurant ? "Open Restaurant Dashboard" : "Switch to Restaurant Mode"}
-            {!switching && <ChevronRight className="w-4 h-4" />}
-          </button>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <Bike className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold">Driver Mode</p>
-              <p className="text-xs text-muted-foreground">Switch to the driver dashboard to accept deliveries</p>
-            </div>
-            {isDriver && (
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-semibold">Active</span>
-            )}
-          </div>
-          <button
-            onClick={goDriver}
-            disabled={switching}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {switching ? "Switching..." : isDriver ? "Open Driver Dashboard" : "Switch to Driver Mode"}
-            {!switching && <ChevronRight className="w-4 h-4" />}
-          </button>
+        <div className="bg-card border border-border rounded-2xl p-4 mb-4 flex gap-3">
+          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            To switch between Browsing, Driver, Restaurant, or Influencer mode, log out and choose your role on the login screen.
+          </p>
         </div>
 
         {user.role === "admin" && (
-          <Link to="/admin-dashboard" className="mt-4 flex items-center gap-3 bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform">
+          <button
+            onClick={() => navigate("/admin-dashboard")}
+            className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform"
+          >
             <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
               <Shield className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 text-left">
               <p className="text-sm font-semibold">Admin Dashboard</p>
               <p className="text-xs text-muted-foreground">Review applications & monitor performance</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </Link>
+          </button>
         )}
       </div>
     </CustomerLayout>

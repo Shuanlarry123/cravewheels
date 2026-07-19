@@ -8,12 +8,15 @@ import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
+import RolePicker from "@/components/RolePicker";
+import { getRole, setRole as persistRole, roleHome } from "@/components/RoleGate";
 import { toast } from "@/components/ui/use-toast";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState(getRole());
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -45,7 +48,8 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      window.location.href = "/";
+      persistRole(role);
+      window.location.href = roleHome(role);
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {
@@ -67,7 +71,8 @@ export default function Register() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", "/");
+    persistRole(role);
+    base44.auth.loginWithProvider("google", roleHome(role));
   };
 
   if (showOtp) {
@@ -138,6 +143,8 @@ export default function Register() {
         </>
       }
     >
+      <RolePicker value={role} onChange={setRole} />
+
       <Button
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"

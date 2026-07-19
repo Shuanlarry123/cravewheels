@@ -22,6 +22,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import RestaurantDashboard from '@/pages/RestaurantDashboard';
 import DiscoveryMap from '@/pages/DiscoveryMap';
 import DriverProfile from '@/pages/DriverProfile';
+import RoleGate from '@/components/RoleGate';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -58,12 +59,12 @@ const AuthenticatedApp = () => {
       <Route path="/orders" element={<Orders />} />
       <Route path="/order/:id/tracking" element={<OrderTracking />} />
       <Route path="/profile" element={<Profile />} />
-      <Route path="/driver" element={<DriverDashboard />} />
-      <Route path="/driver/profile" element={<DriverProfile />} />
+      <Route path="/driver" element={<RoleGate requiredRole="driver"><DriverDashboard /></RoleGate>} />
+      <Route path="/driver/profile" element={<RoleGate requiredRole="driver"><DriverProfile /></RoleGate>} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/about" element={<About />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
-      <Route path="/restaurant-dashboard" element={<RestaurantDashboard />} />
+      <Route path="/restaurant-dashboard" element={<RoleGate requiredRole="restaurant"><RestaurantDashboard /></RoleGate>} />
       <Route path="/discovery-map" element={<DiscoveryMap />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

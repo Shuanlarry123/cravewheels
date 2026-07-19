@@ -7,10 +7,13 @@ import { Label } from "@/components/ui/label";
 import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
+import RolePicker from "@/components/RolePicker";
+import { getRole, setRole as persistRole, roleHome } from "@/components/RoleGate";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState(getRole());
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,8 +22,9 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
+      persistRole(role);
       await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/";
+      window.location.href = roleHome(role);
     } catch (err) {
       setError(err.message || "Invalid email or password");
     } finally {
@@ -29,7 +33,8 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", "/");
+    persistRole(role);
+    base44.auth.loginWithProvider("google", roleHome(role));
   };
 
   return (
@@ -46,6 +51,8 @@ export default function Login() {
         </>
       }
     >
+      <RolePicker value={role} onChange={setRole} />
+
       <Button
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
