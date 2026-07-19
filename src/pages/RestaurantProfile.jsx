@@ -3,7 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Star, Store, Radio, Utensils, MapPin } from "lucide-react";
+import RestaurantVideoMenu from "@/components/restaurant/RestaurantVideoMenu";
+import { ArrowLeft, Star, Store, Radio, MapPin } from "lucide-react";
 
 export default function RestaurantProfile() {
   const { id } = useParams();
@@ -32,8 +33,7 @@ export default function RestaurantProfile() {
     );
   if (!restaurant) return <div className="p-8 text-center text-muted-foreground">Restaurant not found.</div>;
 
-  const featured = items.filter((i) => i.is_featured);
-  const regular = items.filter((i) => !i.is_featured);
+  const menu = [...items].sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
 
   return (
     <div className="min-h-[100dvh] bg-background pb-24">
@@ -89,42 +89,9 @@ export default function RestaurantProfile() {
           </div>
         )}
 
-        {featured.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-sm font-bold flex items-center gap-1.5 mb-3">
-              <Utensils className="w-4 h-4 text-primary" /> Daily Specials
-            </h2>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar">
-              {featured.map((i) => (
-                <Link key={i.id} to={`/item/${i.id}`} className="flex-shrink-0 w-40 bg-card border border-border rounded-2xl overflow-hidden">
-                  <div className="aspect-square">
-                    {i.thumbnail_url && <img src={i.thumbnail_url} className="w-full h-full object-cover" />}
-                  </div>
-                  <div className="p-2">
-                    <p className="text-xs font-medium line-clamp-1">{i.name}</p>
-                    <p className="text-primary text-xs font-bold">${i.price.toFixed(2)}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="mt-6">
-          <h2 className="text-sm font-bold mb-3">Menu</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {regular.map((i) => (
-              <Link key={i.id} to={`/item/${i.id}`} className="bg-card border border-border rounded-2xl overflow-hidden active:scale-[0.98] transition-transform">
-                <div className="aspect-square bg-muted relative">
-                  {i.thumbnail_url && <img src={i.thumbnail_url} className="w-full h-full object-cover" />}
-                  <span className="absolute bottom-1 right-1 bg-black/70 text-white text-xs font-bold px-1.5 py-0.5 rounded">${i.price.toFixed(2)}</span>
-                </div>
-                <div className="p-2">
-                  <p className="text-xs font-medium line-clamp-1">{i.name}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <h2 className="text-sm font-bold mb-3">Video Menu</h2>
+          <RestaurantVideoMenu items={menu} />
         </div>
       </div>
     </div>
