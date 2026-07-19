@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ChevronLeft } from "lucide-react";
 import AdminStats from "@/components/admin/AdminStats";
-import PendingRestaurants from "@/components/admin/PendingRestaurants";
-import PendingDrivers from "@/components/admin/PendingDrivers";
+import ApprovalQueue from "@/components/admin/ApprovalQueue";
 import { toast } from "react-hot-toast";
 
 export default function AdminDashboard() {
@@ -87,8 +86,13 @@ export default function AdminDashboard() {
 
         <AdminStats restaurants={restaurants} drivers={drivers} orders={orders} revenue={revenue} />
 
-        <PendingRestaurants items={pendingRestaurants} onApprove={approveRestaurant} busy={busy} />
-        <PendingDrivers items={pendingDrivers} onApprove={approveDriver} busy={busy} />
+        <ApprovalQueue
+          restaurants={restaurants}
+          drivers={drivers}
+          onApproveRestaurant={approveRestaurant}
+          onApproveDriver={approveDriver}
+          busy={busy}
+        />
       </div>
     </div>
   );
