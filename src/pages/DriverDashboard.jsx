@@ -93,7 +93,7 @@ export default function DriverDashboard() {
   const markPickedUp = async (order) => {
     setBusy(true);
     try {
-      await base44.entities.Order.update(order.id, { status: "picked_up" });
+      await base44.functions.invoke("notifyOrderStatus", { order_id: order.id, status: "picked_up" });
       toast.success("Marked as picked up");
       await loadOrders(user);
     } catch {
@@ -106,7 +106,7 @@ export default function DriverDashboard() {
   const markDelivered = async (order) => {
     setBusy(true);
     try {
-      await base44.entities.Order.update(order.id, { status: "delivered" });
+      await base44.functions.invoke("notifyOrderStatus", { order_id: order.id, status: "delivered" });
       await base44.entities.DriverProfile.update(profile.id, {
         total_deliveries: (profile.total_deliveries || 0) + 1,
         total_earnings: (profile.total_earnings || 0) + (order.delivery_fee || 2.99),
