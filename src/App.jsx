@@ -62,25 +62,27 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/" element={<Feed />} />
-      <Route path="/item/:id" element={<ItemDetail />} />
-      <Route path="/restaurant/:id" element={<RestaurantProfile />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/orders" element={<Orders />} />
-      <Route path="/order/:id/tracking" element={<OrderTracking />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/driver" element={<RoleGate requiredRole="driver"><DriverDashboard /></RoleGate>} />
-      <Route path="/driver/profile" element={<RoleGate requiredRole="driver"><DriverProfile /></RoleGate>} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/apply/:type" element={<Apply />} />
-      <Route path="/admin-dashboard" element={<AdminDashboard />} />
-      <Route path="/restaurant-dashboard" element={<RoleGate requiredRole="restaurant"><RestaurantDashboard /></RoleGate>} />
-      <Route path="/creator-dashboard" element={<RoleGate requiredRole="creator"><CreatorDashboard /></RoleGate>} />
-      <Route path="/discovery-map" element={<DiscoveryMap />} />
-      <Route path="*" element={<PageNotFound />} />
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/" element={<Feed />} />
+        <Route path="/item/:id" element={<ItemDetail />} />
+        <Route path="/restaurant/:id" element={<RestaurantProfile />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/order/:id/tracking" element={<OrderTracking />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/driver" element={<RoleGate requiredRole="driver"><DriverDashboard /></RoleGate>} />
+        <Route path="/driver/profile" element={<RoleGate requiredRole="driver"><DriverProfile /></RoleGate>} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/apply/:type" element={<Apply />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/restaurant-dashboard" element={<RoleGate requiredRole="restaurant"><RestaurantDashboard /></RoleGate>} />
+        <Route path="/creator-dashboard" element={<RoleGate requiredRole="creator"><CreatorDashboard /></RoleGate>} />
+        <Route path="/discovery-map" element={<DiscoveryMap />} />
+        <Route path="*" element={<PageNotFound />} />
+      </Route>
     </Routes>
   );
 };
