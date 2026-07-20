@@ -5,7 +5,7 @@ import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 
 const SECTIONS = [
-  { icon: Video, title: "For You Feed", desc: "A TikTok-style vertical feed of mouth-watering dish clips from nearby restaurants, auto-playing as you scroll." },
+  { icon: Video, title: "For You Feed", desc: "A vertical feed of mouth-watering dish clips from nearby restaurants, auto-playing as you scroll." },
   { icon: Search, title: "Near Me Map", desc: "A full-screen map to discover restaurants delivering to your area, with a showcase of top spots." },
   { icon: ShoppingBag, title: "Cart & Checkout", desc: "Add dishes from a single restaurant, enter your delivery address, and place an order in seconds." },
   { icon: Receipt, title: "Orders & Tracking", desc: "Track every order live from the kitchen to your door with status updates and delivery ETA." },

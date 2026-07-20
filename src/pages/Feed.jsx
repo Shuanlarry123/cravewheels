@@ -57,7 +57,7 @@ function FeedInner() {
         restaurant: m.restaurant_name,
       }));
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a food recommendation engine for CraveReel, a TikTok-style food delivery app. The current time-of-day is "${timeOfDay()}". From the following menu items, return a personalized ranking best suited for this time of day, each with a short appetizing reason (max 8 words). ${JSON.stringify(slim)}`,
+        prompt: `You are a food recommendation engine for CraveReel, a video-first food delivery app. The current time-of-day is "${timeOfDay()}". From the following menu items, return a personalized ranking best suited for this time of day, each with a short appetizing reason (max 8 words). ${JSON.stringify(slim)}`,
         response_json_schema: {
           type: "object",
           properties: {
