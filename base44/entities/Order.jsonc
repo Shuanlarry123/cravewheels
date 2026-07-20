@@ -83,6 +83,28 @@
     "commission_amount": {
       "type": "number",
       "default": 0
+    },
+    "order_type": {
+      "type": "string",
+      "enum": [
+        "delivery",
+        "pickup"
+      ],
+      "default": "delivery"
+    },
+    "scheduled_for": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_instructions": {
+      "type": "string"
+    },
+    "promo_code": {
+      "type": "string"
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [

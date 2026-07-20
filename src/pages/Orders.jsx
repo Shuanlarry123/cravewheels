@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Receipt, ChevronRight } from "lucide-react";
+import { Receipt, ChevronRight, Repeat } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
-import { CartProvider } from "@/lib/cartContext";
+import { CartProvider, useCart } from "@/lib/cartContext";
+import { toast } from "react-hot-toast";
 
 const STATUS_STYLES = {
   pending: "bg-yellow-500/15 text-yellow-400",
@@ -15,6 +16,8 @@ const STATUS_STYLES = {
 };
 
 function OrdersInner() {
+  const navigate = useNavigate();
+  const { replaceCart } = useCart();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,11 +32,28 @@ function OrdersInner() {
 
   useEffect(() => {
     load();
-    const unsub = base44.entities.Order.subscribe((event) => {
+    const unsub = base44.entities.Order.subscribe(() => {
       load();
     });
     return unsub;
   }, []);
+
+  const reorder = (o, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    replaceCart(
+      (o.items || []).map((i) => ({
+        menu_item_id: i.menu_item_id,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        video_url: i.video_url,
+      })),
+      { id: o.restaurant_id, name: o.restaurant_name }
+    );
+    toast.success("Items added to cart");
+    navigate("/cart");
+  };
 
   return (
     <CustomerLayout>
@@ -51,29 +71,36 @@ function OrdersInner() {
         ) : (
           <div className="space-y-3">
             {orders.map((o) => (
-              <Link
-                key={o.id}
-                to={`/order/${o.id}/tracking`}
-                className="block bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm">{o.restaurant_name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {o.items?.reduce((s, i) => s + i.quantity, 0)} items · ${o.total_amount?.toFixed(2)}
-                    </p>
+              <div key={o.id} className="bg-card border border-border rounded-2xl p-4">
+                <Link to={`/order/${o.id}/tracking`} className="block active:scale-[0.99] transition-transform">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">{o.restaurant_name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {o.items?.reduce((s, i) => s + i.quantity, 0)} items · ${o.total_amount?.toFixed(2)}
+                      </p>
+                      {o.order_type === "pickup" && (
+                        <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-card border border-border text-muted-foreground">Pickup</span>
+                      )}
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[o.status] || ""}`}>
+                      {o.status.replace("_", " ")}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[o.status] || ""}`}>
-                    {o.status.replace("_", " ")}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-[11px] text-muted-foreground">
-                    {new Date(o.created_date).toLocaleString()}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </div>
-              </Link>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-[11px] text-muted-foreground">
+                      {new Date(o.created_date).toLocaleString()}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => reorder(o, e)}
+                  className="w-full mt-3 h-10 rounded-xl bg-primary/15 text-primary text-sm font-semibold flex items-center justify-center gap-2"
+                >
+                  <Repeat className="w-4 h-4" /> Reorder
+                </button>
+              </div>
             ))}
           </div>
         )}

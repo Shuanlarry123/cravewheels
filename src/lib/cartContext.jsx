@@ -79,6 +79,10 @@ export function CartProvider({ children }) {
     persist([], null, null);
   }, [persist]);
 
+  const replaceCart = useCallback((nextItems, restaurant) => {
+    persist(nextItems || [], restaurant?.id || null, restaurant?.name || null);
+  }, [persist]);
+
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const count = items.reduce((s, i) => s + i.quantity, 0);
 
@@ -91,6 +95,7 @@ export function CartProvider({ children }) {
         addItem,
         updateQty,
         clearCart,
+        replaceCart,
         subtotal,
         count,
         deliveryFee: restaurantId ? 2.99 : 0,

@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 
 const FLOW = {
   pending: { next: "confirmed", label: "Confirm Order" },
@@ -21,11 +21,21 @@ export default function RestaurantOrders({ orders, onAdvance, busy }) {
           {active.map((o) => (
             <div key={o.id} className="bg-card border border-border rounded-2xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-semibold capitalize">
-                  {o.status.replace("_", " ")}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-semibold capitalize">
+                    {o.status.replace("_", " ")}
+                  </span>
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-card border border-border text-muted-foreground capitalize">
+                    {o.order_type || "delivery"}
+                  </span>
+                </div>
                 <span className="text-sm font-bold">${(o.total_amount || 0).toFixed(2)}</span>
               </div>
+              {o.scheduled_for && (
+                <p className="text-[11px] text-primary mb-2 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Scheduled: {new Date(o.scheduled_for).toLocaleString()}
+                </p>
+              )}
               <div className="space-y-1 mb-2">
                 {(o.items || []).map((it, i) => (
                   <div key={i} className="flex justify-between text-xs text-muted-foreground">

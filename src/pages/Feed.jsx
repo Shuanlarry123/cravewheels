@@ -19,6 +19,7 @@ function FeedInner() {
   const [loc, setLoc] = useState(null);
   const [radius, setRadius] = useState(10);
   const [muted, setMuted] = useState(true);
+  const [promoRestIds, setPromoRestIds] = useState(new Set());
   const containerRef = useRef(null);
   const ioRef = useRef(null);
 
@@ -91,6 +92,13 @@ function FeedInner() {
   }, []);
 
   useEffect(() => {
+    base44.entities.Promo
+      .filter({ is_active: true }, "-created_date", 50)
+      .then((ps) => setPromoRestIds(new Set(ps.map((p) => p.restaurant_id).filter(Boolean))))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     load();
   }, [load]);
 
@@ -124,17 +132,19 @@ function FeedInner() {
     addItem(item, item._restaurant || { id: item.restaurant_id, name: item.restaurant_name });
   };
 
-  const visibleItems =
-    tab === "nearme" && loc
-      ? items
-          .map((m) => {
-            const r = m._restaurant;
-            const d = r ? haversineKm(loc.lat, loc.lng, r.latitude, r.longitude) : null;
-            return { ...m, _dist: d };
-          })
-          .filter((m) => m._dist == null || m._dist <= radius)
-          .sort((a, b) => (a._dist ?? 999) - (b._dist ?? 999))
-      : items;
+  let visibleItems = items;
+  if (tab === "deals") {
+    visibleItems = items.filter((m) => m.is_featured || promoRestIds.has(m.restaurant_id));
+  } else if (tab === "nearme" && loc) {
+    visibleItems = items
+      .map((m) => {
+        const r = m._restaurant;
+        const d = r ? haversineKm(loc.lat, loc.lng, r.latitude, r.longitude) : null;
+        return { ...m, _dist: d };
+      })
+      .filter((m) => m._dist == null || m._dist <= radius)
+      .sort((a, b) => (a._dist ?? 999) - (b._dist ?? 999));
+  }
 
   return (
     <CustomerLayout>
@@ -156,6 +166,15 @@ function FeedInner() {
           }`}
         >
           Near Me
+        </button>
+        <span className="text-white/30">|</span>
+        <button
+          onClick={() => setTab("deals")}
+          className={`px-4 py-1 text-sm font-semibold rounded-full transition-colors ${
+            tab === "deals" ? "text-white" : "text-white/50"
+          }`}
+        >
+          Deals
         </button>
       </div>
 
@@ -192,7 +211,11 @@ function FeedInner() {
         <div className="h-[100dvh] flex flex-col items-center justify-center text-center px-8">
           <Menu className="w-10 h-10 text-muted-foreground mb-3" />
           <p className="text-muted-foreground">
-            {tab === "nearme" ? "No restaurants delivering to your area yet." : "No dishes available right now."}
+            {tab === "nearme"
+              ? "No restaurants delivering to your area yet."
+              : tab === "deals"
+              ? "No active deals right now."
+              : "No dishes available right now."}
           </p>
         </div>
       ) : (

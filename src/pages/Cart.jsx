@@ -1,24 +1,90 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Minus, Plus, Trash2, MapPin } from "lucide-react";
+import { Minus, Plus, Trash2, MapPin, Tag, Clock, Store, Truck, X } from "lucide-react";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import CustomerLayout from "@/components/CustomerLayout";
 import { toast } from "react-hot-toast";
+
+const DROPOFF_OPTIONS = ["Leave at door", "Hand to me", "Meet outside"];
 
 function CartInner() {
   const navigate = useNavigate();
   const { items, updateQty, clearCart, subtotal, deliveryFee, restaurantId, restaurantName } = useCart();
   const { code: refCode, clear: clearRef } = useReferral();
+  const [orderType, setOrderType] = useState("delivery");
+  const [scheduleMode, setScheduleMode] = useState("asap");
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [dropoff, setDropoff] = useState(DROPOFF_OPTIONS[0]);
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState(null);
+  const [discount, setDiscount] = useState(0);
+  const [applyingPromo, setApplyingPromo] = useState(false);
+  const [restaurant, setRestaurant] = useState(null);
   const [placing, setPlacing] = useState(false);
 
-  const total = subtotal + deliveryFee;
+  useEffect(() => {
+    if (!restaurantId) return;
+    base44.entities.Restaurant.get(restaurantId).then(setRestaurant).catch(() => {});
+  }, [restaurantId]);
+
+  const effectiveFee = orderType === "pickup" ? 0 : deliveryFee;
+  const total = Math.max(0, subtotal + effectiveFee - discount);
+
+  const applyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setApplyingPromo(true);
+    try {
+      const found = await base44.entities.Promo.filter(
+        { code: promoInput.trim().toUpperCase(), is_active: true },
+        "-created_date",
+        1
+      );
+      const p = found[0];
+      if (!p) {
+        toast.error("Invalid promo code");
+        return;
+      }
+      if (p.valid_until && new Date(p.valid_until) < new Date()) {
+        toast.error("This promo has expired");
+        return;
+      }
+      if (p.restaurant_id && p.restaurant_id !== restaurantId) {
+        toast.error(`Valid only at ${p.restaurant_name || "that restaurant"}`);
+        return;
+      }
+      if (subtotal < (p.min_order || 0)) {
+        toast.error(`Minimum order $${(p.min_order || 0).toFixed(2)} required`);
+        return;
+      }
+      let d = p.discount_type === "percent" ? (subtotal * p.value) / 100 : p.value;
+      if (p.max_discount && d > p.max_discount) d = p.max_discount;
+      d = Math.round(d * 100) / 100;
+      setPromo(p);
+      setDiscount(d);
+      toast.success(`Promo applied — you save $${d.toFixed(2)}`);
+    } catch {
+      toast.error("Failed to apply promo");
+    } finally {
+      setApplyingPromo(false);
+    }
+  };
+
+  const clearPromo = () => {
+    setPromo(null);
+    setDiscount(0);
+    setPromoInput("");
+  };
 
   const placeOrder = async () => {
-    if (!address.trim()) {
+    if (orderType === "delivery" && !address.trim()) {
       toast.error("Please enter a delivery address");
+      return;
+    }
+    if (scheduleMode === "later" && !scheduledFor) {
+      toast.error("Choose a time for your order");
       return;
     }
     setPlacing(true);
@@ -46,14 +112,19 @@ function CartInner() {
           video_url: i.video_url,
         })),
         total_amount: total,
-        delivery_address: address,
-        delivery_fee: deliveryFee,
+        delivery_address: orderType === "pickup" ? restaurant?.address || "Pickup" : address,
+        delivery_fee: effectiveFee,
         notes,
         status: "pending",
         payment_status: "paid",
         referral_code: refCode || null,
         creator_id,
         commission_amount,
+        order_type: orderType,
+        scheduled_for: scheduleMode === "later" ? scheduledFor : null,
+        delivery_instructions: orderType === "delivery" ? dropoff : null,
+        promo_code: promo?.code || null,
+        discount_amount: discount,
       });
       clearRef();
       clearCart();
@@ -101,34 +172,156 @@ function CartInner() {
               ))}
             </div>
 
-            <div className="mt-6 space-y-3">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" /> Delivery Address
-              </label>
-              <input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street, building, apt..."
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
-              />
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Delivery notes (optional)"
-                rows={2}
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"
-              />
+            {/* Order type */}
+            <div className="mt-6">
+              <p className="text-sm font-medium mb-2">Order Type</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOrderType("delivery")}
+                  className={`flex-1 h-11 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 ${
+                    orderType === "delivery" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"
+                  }`}
+                >
+                  <Truck className="w-4 h-4" /> Delivery
+                </button>
+                <button
+                  onClick={() => setOrderType("pickup")}
+                  className={`flex-1 h-11 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 ${
+                    orderType === "pickup" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"
+                  }`}
+                >
+                  <Store className="w-4 h-4" /> Pickup
+                </button>
+              </div>
             </div>
 
+            {/* Schedule */}
+            <div className="mt-5">
+              <p className="text-sm font-medium mb-2 flex items-center gap-2"><Clock className="w-4 h-4" /> When</p>
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => setScheduleMode("asap")}
+                  className={`flex-1 h-10 rounded-xl border text-sm font-medium ${
+                    scheduleMode === "asap" ? "bg-primary/15 text-primary border-primary/40" : "bg-card border-border text-muted-foreground"
+                  }`}
+                >
+                  ASAP
+                </button>
+                <button
+                  onClick={() => setScheduleMode("later")}
+                  className={`flex-1 h-10 rounded-xl border text-sm font-medium ${
+                    scheduleMode === "later" ? "bg-primary/15 text-primary border-primary/40" : "bg-card border-border text-muted-foreground"
+                  }`}
+                >
+                  Schedule for later
+                </button>
+              </div>
+              {scheduleMode === "later" && (
+                <input
+                  type="datetime-local"
+                  value={scheduledFor}
+                  onChange={(e) => setScheduledFor(e.target.value)}
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                />
+              )}
+            </div>
+
+            {/* Delivery or pickup details */}
+            {orderType === "delivery" ? (
+              <div className="mt-5 space-y-3">
+                <label className="text-sm font-medium flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Delivery Address</label>
+                <input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street, building, apt..."
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                />
+                <label className="text-sm font-medium">Drop-off</label>
+                <select
+                  value={dropoff}
+                  onChange={(e) => setDropoff(e.target.value)}
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                >
+                  {DROPOFF_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Delivery notes (optional)"
+                  rows={2}
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+            ) : (
+              <div className="mt-5 space-y-3">
+                <div className="bg-card border border-border rounded-2xl p-4">
+                  <p className="text-sm font-medium flex items-center gap-2"><Store className="w-4 h-4 text-primary" /> Pickup from</p>
+                  <p className="text-sm text-muted-foreground mt-1">{restaurant?.address || restaurantName}</p>
+                  {scheduleMode === "later" && scheduledFor && (
+                    <p className="text-xs text-primary mt-1">Ready for pickup: {new Date(scheduledFor).toLocaleString()}</p>
+                  )}
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Pickup notes (optional)"
+                  rows={2}
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+            )}
+
+            {/* Promo */}
+            <div className="mt-5">
+              <p className="text-sm font-medium mb-2 flex items-center gap-2"><Tag className="w-4 h-4 text-primary" /> Promo Code</p>
+              {promo ? (
+                <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-xl p-3">
+                  <div>
+                    <p className="text-sm font-semibold text-primary">{promo.code}</p>
+                    <p className="text-xs text-muted-foreground">−${discount.toFixed(2)} applied</p>
+                  </div>
+                  <button onClick={clearPromo} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    placeholder="Enter code"
+                    className="flex-1 bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    onClick={applyPromo}
+                    disabled={applyingPromo}
+                    className="px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                  >
+                    {applyingPromo ? "..." : "Apply"}
+                  </button>
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-2">Try WELCOME10, SAVE5, or LUNCH15</p>
+            </div>
+
+            {/* Summary */}
             <div className="mt-6 bg-card border border-border rounded-2xl p-4 space-y-2 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>Delivery Fee</span>
-                <span>${deliveryFee.toFixed(2)}</span>
+                <span>{orderType === "pickup" ? "Pickup" : "Delivery Fee"}</span>
+                <span>{orderType === "pickup" ? "Free" : `$${deliveryFee.toFixed(2)}`}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-primary">
+                  <span>Discount</span>
+                  <span>−${discount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="h-px bg-border my-1" />
               <div className="flex justify-between font-bold text-base">
                 <span>Total</span>
