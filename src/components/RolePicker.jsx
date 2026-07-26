@@ -1,12 +1,10 @@
 import React from "react";
-import { ShoppingBag, Bike, Store, Sparkles } from "lucide-react";
+import { ShoppingBag, Bike } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = [
-  { id: "browsing", label: "Browsing", desc: "Discover & order food", icon: ShoppingBag },
+  { id: "browsing", label: "Customer", desc: "Discover & order food", icon: ShoppingBag },
   { id: "driver", label: "Driver", desc: "Deliver orders & earn", icon: Bike },
-  { id: "restaurant", label: "Restaurant", desc: "Manage your menu", icon: Store },
-  { id: "creator", label: "Influencer", desc: "Share & earn commission", icon: Sparkles },
 ];
 
 export default function RolePicker({ value, onChange }) {
