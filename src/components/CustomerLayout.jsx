@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Search, ShoppingBag, Receipt, User, Settings, Info, ShieldCheck, MoreHorizontal, X, LogOut } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -20,8 +21,13 @@ const MORE = [
 
 export default function CustomerLayout({ children }) {
   const location = useLocation();
+  const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreActive = MORE.some((m) => location.pathname === m.to) || moreOpen;
+  const isAdmin = user?.role === "admin";
+  const moreActive =
+    MORE.some((m) => location.pathname === m.to) ||
+    (isAdmin && location.pathname === "/admin-dashboard") ||
+    moreOpen;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -71,6 +77,16 @@ export default function CustomerLayout({ children }) {
               </button>
             </div>
             <div className="space-y-2">
+              {isAdmin && (
+                <Link
+                  to="/admin-dashboard"
+                  onClick={() => setMoreOpen(false)}
+                  className="flex items-center gap-3 bg-primary/15 border border-primary/30 rounded-2xl p-3.5 active:scale-[0.99] transition-transform"
+                >
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  <span className="flex-1 font-medium text-sm">Admin Dashboard</span>
+                </Link>
+              )}
               {MORE.map(({ to, icon: Icon, label }) => (
                 <Link
                   key={to}
