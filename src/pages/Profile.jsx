@@ -15,6 +15,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
+import RestaurantOwnerProfile from "@/components/profile/RestaurantOwnerProfile";
 import { CartProvider } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ function Thumb({ item }) {
 function ProfileInner() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [restaurant, setRestaurant] = useState(null);
   const [saved, setSaved] = useState([]);
   const [liked, setLiked] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -71,6 +73,12 @@ function ProfileInner() {
           profile_picture: me.profile_picture || "",
         });
         setBioDraft(me.bio || "");
+        const mine = await base44.entities.Restaurant.filter({ created_by_id: user.id });
+        if (cancelled) return;
+        if (mine && mine.length) {
+          setRestaurant(mine[0]);
+          return;
+        }
         const [sv, lk, ords, cmts] = await Promise.all([
           base44.entities.Saved.filter({ created_by_id: user.id }, "-created_date", 60),
           base44.entities.Like.filter({ created_by_id: user.id }, "-created_date", 60),
@@ -127,6 +135,13 @@ function ProfileInner() {
         <div className="h-[100dvh] flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-white/20 border-t-primary rounded-full animate-spin" />
         </div>
+      </CustomerLayout>
+    );
+
+  if (restaurant)
+    return (
+      <CustomerLayout>
+        <RestaurantOwnerProfile restaurant={restaurant} />
       </CustomerLayout>
     );
 

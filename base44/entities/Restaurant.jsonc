@@ -55,6 +55,9 @@
     },
     "live_stream_url": {
       "type": "string"
+    },
+    "kitchen_video_url": {
+      "type": "string"
     }
   },
   "required": [
