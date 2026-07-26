@@ -1,6 +1,6 @@
-import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, ShoppingBag, Receipt, User } from "lucide-react";
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, Search, ShoppingBag, Receipt, User, Settings, Info, ShieldCheck, MoreHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -11,13 +11,22 @@ const nav = [
   { to: "/profile", icon: User, label: "Profile" },
 ];
 
+const MORE = [
+  { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/about", icon: Info, label: "About CraveReel" },
+  { to: "/privacy", icon: ShieldCheck, label: "Privacy & Security" },
+];
+
 export default function CustomerLayout({ children }) {
   const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreActive = MORE.some((m) => location.pathname === m.to) || moreOpen;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-md min-h-screen relative bg-background">{children}</div>
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md border-t border-border bg-background/95 backdrop-blur-md z-50">
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-16 px-1">
           {nav.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
             return (
@@ -34,8 +43,48 @@ export default function CustomerLayout({ children }) {
               </Link>
             );
           })}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl transition-colors",
+              moreActive ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            <MoreHorizontal className="w-5 h-5" strokeWidth={moreActive ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">More</span>
+          </button>
         </div>
       </nav>
+
+      {moreOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center" onClick={() => setMoreOpen(false)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative w-full max-w-md bg-card border-t border-border rounded-t-2xl p-4 pb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold">More</span>
+              <button onClick={() => setMoreOpen(false)}>
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {MORE.map(({ to, icon: Icon, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMoreOpen(false)}
+                  className="flex items-center gap-3 bg-background border border-border rounded-2xl p-3.5 active:scale-[0.99] transition-transform"
+                >
+                  <Icon className="w-5 h-5 text-primary" />
+                  <span className="flex-1 font-medium text-sm">{label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

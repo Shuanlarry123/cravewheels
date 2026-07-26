@@ -9,10 +9,7 @@ import {
   Bookmark,
   Receipt,
   MessageCircle,
-  Settings as SettingsIcon,
   LogOut,
-  Info,
-  ShieldCheck,
   Shield,
   Pencil,
   ChevronRight,
@@ -311,21 +308,6 @@ function ProfileInner() {
               <ChevronRight className="w-4 h-4 text-primary" />
             </Link>
           )}
-          <Link to="/settings" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.99] transition-transform">
-            <SettingsIcon className="w-5 h-5 text-primary" />
-            <span className="flex-1 font-medium text-sm">Settings</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </Link>
-          <Link to="/about" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.99] transition-transform">
-            <Info className="w-5 h-5 text-primary" />
-            <span className="flex-1 font-medium text-sm">About CraveReel</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </Link>
-          <Link to="/privacy" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.99] transition-transform">
-            <ShieldCheck className="w-5 h-5 text-primary" />
-            <span className="flex-1 font-medium text-sm">Privacy & Security</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </Link>
           <button
             onClick={() => base44.auth.logout("/login")}
             className="w-full mt-2 h-11 rounded-xl bg-card border border-border text-muted-foreground font-medium text-sm flex items-center justify-center gap-2"
