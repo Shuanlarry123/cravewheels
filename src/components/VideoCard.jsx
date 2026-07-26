@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Star, Plus } from "lucide-react";
+import { MapPin } from "lucide-react";
+import VideoEngagement from "@/components/VideoEngagement";
 
 export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted }) {
   const videoRef = useRef(null);
@@ -29,15 +30,7 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40 pointer-events-none" />
 
-      {/* Right action rail */}
-      <div className="absolute right-3 bottom-28 flex flex-col items-center gap-5 z-20">
-        <button
-          onClick={() => onAdd(item)}
-          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg active:scale-90 transition-transform"
-        >
-          <Plus className="w-6 h-6" strokeWidth={2.5} />
-        </button>
-      </div>
+      <VideoEngagement item={item} active={active} onAdd={onAdd} />
 
       {/* Bottom info */}
       <div className="absolute left-0 right-0 bottom-24 px-4 pb-2 z-20">
@@ -51,11 +44,6 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
           {distanceKm != null && (
             <span className="flex items-center gap-1 text-white/80 text-xs">
               <MapPin className="w-3.5 h-3.5" /> {distanceKm.toFixed(1)} km · {etaMin} min
-            </span>
-          )}
-          {item.likes > 0 && (
-            <span className="flex items-center gap-1 text-white/80 text-xs">
-              <Star className="w-3.5 h-3.5 fill-primary text-primary" /> {item.likes}
             </span>
           )}
         </div>

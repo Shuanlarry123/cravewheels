@@ -1,0 +1,25 @@
+{
+  "name": "Comment",
+  "type": "object",
+  "properties": {
+    "menu_item_id": {
+      "type": "string"
+    },
+    "menu_item_name": {
+      "type": "string"
+    },
+    "restaurant_id": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "comment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "menu_item_id",
+    "comment"
+  ]
+}
