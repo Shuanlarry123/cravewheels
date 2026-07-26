@@ -9,7 +9,6 @@ import {
   Bookmark,
   Receipt,
   MessageCircle,
-  LogOut,
   Shield,
   Pencil,
   ChevronRight,
@@ -308,12 +307,7 @@ function ProfileInner() {
               <ChevronRight className="w-4 h-4 text-primary" />
             </Link>
           )}
-          <button
-            onClick={() => base44.auth.logout("/login")}
-            className="w-full mt-2 h-11 rounded-xl bg-card border border-border text-muted-foreground font-medium text-sm flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-4 h-4" /> Log Out
-          </button>
+
         </div>
       </div>
     </CustomerLayout>

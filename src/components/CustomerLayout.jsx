@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, ShoppingBag, Receipt, User, Settings, Info, ShieldCheck, MoreHorizontal, X } from "lucide-react";
+import { Home, Search, ShoppingBag, Receipt, User, Settings, Info, ShieldCheck, MoreHorizontal, X, LogOut } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -81,6 +82,16 @@ export default function CustomerLayout({ children }) {
                   <span className="flex-1 font-medium text-sm">{label}</span>
                 </Link>
               ))}
+              <button
+                onClick={() => {
+                  setMoreOpen(false);
+                  base44.auth.logout("/login");
+                }}
+                className="w-full mt-1 flex items-center gap-3 bg-background border border-border rounded-2xl p-3.5 active:scale-[0.99] transition-transform text-muted-foreground"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="flex-1 font-medium text-sm">Log Out</span>
+              </button>
             </div>
           </div>
         </div>
