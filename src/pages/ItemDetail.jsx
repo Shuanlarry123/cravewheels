@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Store } from "lucide-react";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
+import CommentSection from "@/components/CommentSection";
 
 function ItemInner() {
   const { id } = useParams();
@@ -119,6 +120,10 @@ function ItemInner() {
         {refCode && (
           <p className="text-xs text-muted-foreground mt-4">🎁 Referral code <span className="text-primary font-medium">{refCode}</span> applied — creator earns commission.</p>
         )}
+      </div>
+
+      <div className="px-4 pb-4">
+        <CommentSection itemId={item.id} itemName={item.name} restaurantId={item.restaurant_id} />
       </div>
 
       {/* Sticky add bar */}
