@@ -71,6 +71,10 @@
       "type": "number",
       "default": 2.99
     },
+    "tip": {
+      "type": "number",
+      "default": 0
+    },
     "notes": {
       "type": "string"
     },
