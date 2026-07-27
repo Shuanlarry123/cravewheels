@@ -6,10 +6,12 @@ import DriverOnboarding from "@/components/driver/DriverOnboarding";
 import AvailableDeliveries from "@/components/driver/AvailableDeliveries";
 import ActiveDeliveryCard from "@/components/driver/ActiveDeliveryCard";
 import DriverStats from "@/components/driver/DriverStats";
+import DriverStatsOverview from "@/components/driver/DriverStatsOverview";
 import DirectionsBanner from "@/components/driver/DirectionsBanner";
 import StepsList from "@/components/driver/StepsList";
 import MapboxMap from "@/components/MapboxMap";
 import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
 export default function DriverDashboard() {
@@ -23,6 +25,7 @@ export default function DriverDashboard() {
   const [busy, setBusy] = useState(false);
   const [routeInfo, setRouteInfo] = useState(null);
   const [showSteps, setShowSteps] = useState(false);
+  const [sheetView, setSheetView] = useState("orders");
 
   const loadProfile = useCallback(async (u) => {
     const profs = await base44.entities.DriverProfile.filter({});
@@ -219,10 +222,36 @@ export default function DriverDashboard() {
               </>
             ) : (
               <>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                  Oncoming Orders {available.length > 0 && `(${available.length})`}
-                </h2>
-                <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
+                <div className="flex gap-1 bg-card border border-border rounded-xl p-1 mb-3">
+                  <button
+                    onClick={() => setSheetView("orders")}
+                    className={cn(
+                      "flex-1 h-9 rounded-lg text-xs font-semibold transition-colors",
+                      sheetView === "orders" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    Orders {available.length > 0 && `(${available.length})`}
+                  </button>
+                  <button
+                    onClick={() => setSheetView("stats")}
+                    className={cn(
+                      "flex-1 h-9 rounded-lg text-xs font-semibold transition-colors",
+                      sheetView === "stats" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    My Stats
+                  </button>
+                </div>
+                {sheetView === "stats" ? (
+                  <DriverStatsOverview profile={profile} user={user} />
+                ) : (
+                  <>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                      Oncoming Orders {available.length > 0 && `(${available.length})`}
+                    </h2>
+                    <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
+                  </>
+                )}
               </>
             )}
           </div>
