@@ -6,8 +6,10 @@ import DriverOnboarding from "@/components/driver/DriverOnboarding";
 import AvailableDeliveries from "@/components/driver/AvailableDeliveries";
 import ActiveDeliveryCard from "@/components/driver/ActiveDeliveryCard";
 import DriverStats from "@/components/driver/DriverStats";
+import DirectionsBanner from "@/components/driver/DirectionsBanner";
+import StepsList from "@/components/driver/StepsList";
 import MapboxMap from "@/components/MapboxMap";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function DriverDashboard() {
@@ -19,6 +21,8 @@ export default function DriverDashboard() {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [showSteps, setShowSteps] = useState(false);
 
   const loadProfile = useCallback(async (u) => {
     const profs = await base44.entities.DriverProfile.filter({});
@@ -117,6 +121,8 @@ export default function DriverDashboard() {
         total_earnings: (p.total_earnings || 0) + (order.delivery_fee || 2.99),
       }));
       toast.success("Delivery complete!");
+      setRouteInfo(null);
+      setShowSteps(false);
       await loadOrders(user);
     } catch {
       toast.error("Failed to complete delivery");
@@ -162,6 +168,7 @@ export default function DriverDashboard() {
               driverLat={location?.lat}
               destLng={destLng}
               destLat={destLat}
+              onRouteInfo={setRouteInfo}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -170,13 +177,14 @@ export default function DriverDashboard() {
           )}
         </div>
 
-        {/* Top floating stats bar */}
-        <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/85 to-transparent pb-8">
+        {/* Top floating stats + directions banner */}
+        <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/85 to-transparent pb-8 space-y-2">
           <DriverStats statsOnly profile={profile} />
+          {myOrder && destLng != null && <DirectionsBanner routeInfo={routeInfo} />}
         </div>
 
         {/* Bottom sheet with oncoming orders / active delivery */}
-        <div className="absolute bottom-0 inset-x-0 z-10 bg-background rounded-t-3xl border-t border-border max-h-[48%] overflow-y-auto no-scrollbar">
+        <div className="absolute bottom-0 inset-x-0 z-10 bg-background rounded-t-3xl border-t border-border max-h-[55%] overflow-y-auto no-scrollbar">
           <div className="w-10 h-1 rounded-full bg-muted mx-auto mt-2 mb-1" />
           <div className="p-4 pt-1">
             {myOrder ? (
@@ -191,6 +199,23 @@ export default function DriverDashboard() {
                   onDeliver={() => markDelivered(myOrder)}
                   busy={busy}
                 />
+                {routeInfo?.steps?.length > 0 && (
+                  <>
+                    <button
+                      onClick={() => setShowSteps((s) => !s)}
+                      className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-primary py-2"
+                    >
+                      <RouteIcon className="w-3.5 h-3.5" />
+                      {showSteps ? "Hide" : "Turn-by-turn"} steps ({routeInfo.steps.length})
+                      {showSteps ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                    {showSteps && (
+                      <div className="mt-1 bg-card border border-border rounded-2xl px-3">
+                        <StepsList steps={routeInfo.steps} />
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             ) : (
               <>

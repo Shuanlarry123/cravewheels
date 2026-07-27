@@ -4,16 +4,23 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
   try {
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&access_token=${token}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&steps=true&access_token=${token}`;
     const res = await fetch(url);
     const data = await res.json();
-    return data.routes?.[0]?.geometry?.coordinates || null;
+    const route = data.routes?.[0];
+    if (!route) return null;
+    return {
+      coordinates: route.geometry?.coordinates || [],
+      steps: route.legs?.[0]?.steps || [],
+      duration: route.duration,
+      distance: route.distance,
+    };
   } catch {
     return null;
   }
 }
 
-export default function MapboxMap({ token, driverLng, driverLat, destLng, destLat }) {
+export default function MapboxMap({ token, driverLng, driverLat, destLng, destLat, onRouteInfo }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const driverMarkerRef = useRef(null);
@@ -101,24 +108,30 @@ export default function MapboxMap({ token, driverLng, driverLat, destLng, destLa
     if (destLng != null) pts.push([destLng, destLat]);
     if (pts.length === 2) {
       const bounds = pts.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(pts[0], pts[0]));
-      map.fitBounds(bounds, { padding: 80, maxZoom: 15 });
+      map.fitBounds(bounds, { padding: 80, maxZoom: 16 });
     } else if (pts.length === 1) {
       map.flyTo({ center: pts[0], zoom: 14 });
     }
   }
 
-  // Draw route
+  // Draw route + emit turn-by-turn info
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !token) return;
     if (driverLng == null || destLng == null) {
       routeSourceRef.current?.setData({ type: "Feature", geometry: { type: "LineString", coordinates: [] } });
+      onRouteInfo?.(null);
       return;
     }
     let active = true;
-    fetchRoute(token, driverLng, driverLat, destLng, destLat).then((coords) => {
-      if (!active || !routeSourceRef.current || !coords) return;
-      routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: coords } });
+    fetchRoute(token, driverLng, driverLat, destLng, destLat).then((res) => {
+      if (!active) return;
+      if (!res || !routeSourceRef.current) {
+        onRouteInfo?.(null);
+        return;
+      }
+      routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: res.coordinates } });
+      onRouteInfo?.({ steps: res.steps, duration: res.duration, distance: res.distance });
     });
     return () => {
       active = false;

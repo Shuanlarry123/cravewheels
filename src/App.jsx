@@ -22,6 +22,9 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import RestaurantDashboard from '@/pages/RestaurantDashboard';
 import DiscoveryMap from '@/pages/DiscoveryMap';
 import DriverProfile from '@/pages/DriverProfile';
+import DriverEarnings from '@/pages/DriverEarnings';
+import DriverHistory from '@/pages/DriverHistory';
+import DriverSettings from '@/pages/DriverSettings';
 import RoleGate from '@/components/RoleGate';
 import CreatorDashboard from '@/pages/CreatorDashboard';
 import Login from '@/pages/Login';
@@ -73,6 +76,9 @@ const AuthenticatedApp = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/driver" element={<RoleGate requiredRole="driver"><DriverDashboard /></RoleGate>} />
         <Route path="/driver/profile" element={<RoleGate requiredRole="driver"><DriverProfile /></RoleGate>} />
+        <Route path="/driver/earnings" element={<RoleGate requiredRole="driver"><DriverEarnings /></RoleGate>} />
+        <Route path="/driver/history" element={<RoleGate requiredRole="driver"><DriverHistory /></RoleGate>} />
+        <Route path="/driver/settings" element={<RoleGate requiredRole="driver"><DriverSettings /></RoleGate>} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />

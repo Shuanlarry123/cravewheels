@@ -1,17 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ChevronLeft, ArrowLeftRight, Settings as SettingsIcon, Bike } from "lucide-react";
+import { ChevronLeft, ChevronRight, Wallet, History, Settings as SettingsIcon, Bike, Star } from "lucide-react";
 import DriverLayout from "@/components/DriverLayout";
 import DriverStats from "@/components/driver/DriverStats";
 import { toast } from "react-hot-toast";
+
+function LinkRow({ to, icon: Icon, title, desc }) {
+  return (
+    <a
+      href={to}
+      className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform"
+    >
+      <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-primary" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+    </a>
+  );
+}
 
 export default function DriverProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -41,19 +58,7 @@ export default function DriverProfile() {
     }
   };
 
-  const goCustomer = async () => {
-    setSwitching(true);
-    try {
-      await base44.auth.updateMe({ role: "customer" });
-      navigate("/");
-    } catch {
-      navigate("/");
-    } finally {
-      setSwitching(false);
-    }
-  };
-
-  if (!user) {
+  if (!user)
     return (
       <DriverLayout>
         <div className="min-h-screen flex items-center justify-center">
@@ -61,7 +66,8 @@ export default function DriverProfile() {
         </div>
       </DriverLayout>
     );
-  }
+
+  const rating = profile?.rating ?? 5;
 
   return (
     <DriverLayout>
@@ -70,32 +76,38 @@ export default function DriverProfile() {
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
 
+        {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center mb-2">
-            <Bike className="w-8 h-8 text-primary" />
+          <div className="w-20 h-20 rounded-2xl bg-primary/15 flex items-center justify-center mb-2">
+            <Bike className="w-9 h-9 text-primary" />
           </div>
           <h1 className="text-xl font-bold">{user.full_name || "Driver"}</h1>
           <p className="text-sm text-muted-foreground">{user.email}</p>
-          {profile && <p className="text-xs text-muted-foreground capitalize mt-0.5">{profile.vehicle_type}</p>}
+          {profile && (
+            <p className="text-xs text-muted-foreground capitalize mt-0.5">{profile.vehicle_type} driver</p>
+          )}
         </div>
 
-        {profile && <DriverStats profile={profile} onToggleOnline={toggleOnline} />}
+        {/* Rating */}
+        <div className="flex items-center justify-center gap-1 mb-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={"w-5 h-5 " + (i < Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground")}
+            />
+          ))}
+          <span className="text-sm font-semibold ml-1">{rating.toFixed(1)}</span>
+        </div>
 
-        <Link
-          to="/settings"
-          className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 mb-3 mt-4 active:scale-[0.99] transition-transform"
-        >
-          <SettingsIcon className="w-5 h-5 text-primary" />
-          <span className="flex-1 font-medium text-sm">Settings</span>
-        </Link>
+        {/* Online toggle + stats */}
+        {profile && <DriverStats profile={profile} onToggleOnline={toggleOnline} busy={busy} />}
 
-        <button
-          onClick={goCustomer}
-          disabled={switching}
-          className="w-full h-11 rounded-xl bg-card border border-border text-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          <ArrowLeftRight className="w-4 h-4" /> {switching ? "Switching..." : "Switch to Customer Mode"}
-        </button>
+        {/* Quick links */}
+        <div className="space-y-3 mt-6">
+          <LinkRow to="/driver/earnings" icon={Wallet} title="Earnings" desc="Total, weekly, and per-trip breakdown." />
+          <LinkRow to="/driver/history" icon={History} title="Delivery History" desc="All your past and current trips." />
+          <LinkRow to="/driver/settings" icon={SettingsIcon} title="Settings" desc="Vehicle, account, and preferences." />
+        </div>
       </div>
     </DriverLayout>
   );
