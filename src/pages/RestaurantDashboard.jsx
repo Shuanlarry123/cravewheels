@@ -18,6 +18,7 @@ import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
 import RestaurantStats from "@/components/restaurant/RestaurantStats";
 import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import RestaurantSpecials from "@/components/restaurant/RestaurantSpecials";
+import StripeVirtualCard from "@/components/stripe/StripeVirtualCard";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -153,6 +154,13 @@ export default function RestaurantDashboard() {
         <div className="mt-4">
           {tab === "overview" && (
             <div className="space-y-4">
+              <StripeVirtualCard
+                role="restaurant"
+                record={restaurant}
+                balance={orders.filter((o) => o.status === "delivered").reduce((s, o) => s + (o.total_amount || 0), 0) * 0.85}
+                balanceLabel="Earnings balance (85%)"
+                onIssued={() => window.location.reload()}
+              />
               <RestaurantStats orders={orders} menuCount={menuItems.length} />
               <div>
                 <div className="flex items-center justify-between mb-2">

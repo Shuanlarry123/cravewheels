@@ -58,6 +58,18 @@
     },
     "kitchen_video_url": {
       "type": "string"
+    },
+    "stripe_cardholder_id": {
+      "type": "string"
+    },
+    "stripe_card_id": {
+      "type": "string"
+    },
+    "stripe_card_last4": {
+      "type": "string"
+    },
+    "stripe_card_brand": {
+      "type": "string"
     }
   },
   "required": [

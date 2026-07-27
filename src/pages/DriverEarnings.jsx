@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ChevronLeft, Wallet, Package, Star, TrendingUp, DollarSign } from "lucide-react";
 import DriverLayout from "@/components/DriverLayout";
+import StripeVirtualCard from "@/components/stripe/StripeVirtualCard";
 
 function startOfWeek(d = new Date()) {
   const x = new Date(d);
@@ -62,6 +63,9 @@ export default function DriverEarnings() {
         </button>
         <h1 className="text-2xl font-bold mb-1">Earnings</h1>
         <p className="text-sm text-muted-foreground mb-6">Track what you earn on the road.</p>
+
+        {/* Virtual card */}
+        <StripeVirtualCard role="driver" record={profile} balance={total} balanceLabel="Earnings balance" onIssued={() => window.location.reload()} />
 
         {/* Hero balance */}
         <div className="rounded-3xl bg-gradient-to-br from-primary to-orange-500 p-5 text-white mb-6">
