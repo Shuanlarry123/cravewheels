@@ -2,15 +2,21 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Menu } from "lucide-react";
 import VideoCard from "@/components/VideoCard";
+import QuickAddSheet from "@/components/QuickAddSheet";
+import ViewBasketBar from "@/components/ViewBasketBar";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import { haversineKm, estimateDeliveryMinutes, getUserLocation, timeOfDay } from "@/lib/distance";
 import CustomerLayout from "@/components/CustomerLayout";
 
 const FEED_SENTINEL = "__cravereel_feed__";
 
 function FeedInner() {
-  const { addItem } = useCart();
+  const navigate = useNavigate();
+  const { addItem, count, subtotal } = useCart();
   const { code: refCode } = useReferral();
+  const [quick, setQuick] = useState(null);
   const [items, setItems] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [tab, setTab] = useState("foryou");
@@ -128,8 +134,16 @@ function FeedInner() {
     return () => ioRef.current?.disconnect();
   }, [items]);
 
-  const handleAdd = (item) => {
-    addItem(item, item._restaurant || { id: item.restaurant_id, name: item.restaurant_name });
+  const openQuickAdd = (item) => setQuick(item);
+
+  const confirmQuickAdd = (item, qty) => {
+    const res = addItem(item, item._restaurant || { id: item.restaurant_id, name: item.restaurant_name }, qty);
+    if (res.added) {
+      toast.success(`${qty} × ${item.name} added`);
+      setQuick(null);
+    } else {
+      toast.error(`Cart has items from ${res.conflict}. Clear it first.`);
+    }
   };
 
   let visibleItems = items;
@@ -228,12 +242,14 @@ function FeedInner() {
                 muted={muted}
                 distanceKm={item._dist}
                 etaMin={item._dist != null ? estimateDeliveryMinutes(item._dist) : null}
-                onAdd={handleAdd}
+                onAdd={openQuickAdd}
               />
             </div>
           ))}
         </div>
       )}
+      <ViewBasketBar count={count} subtotal={subtotal} onClick={() => navigate("/cart")} />
+      <QuickAddSheet item={quick} onAdd={confirmQuickAdd} onClose={() => setQuick(null)} />
     </CustomerLayout>
   );
 }

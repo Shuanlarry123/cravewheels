@@ -24,6 +24,8 @@ function CartInner() {
   const [applyingPromo, setApplyingPromo] = useState(false);
   const [restaurant, setRestaurant] = useState(null);
   const [placing, setPlacing] = useState(false);
+  const [tipPct, setTipPct] = useState(15);
+  const [tipCustom, setTipCustom] = useState("");
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -31,7 +33,8 @@ function CartInner() {
   }, [restaurantId]);
 
   const effectiveFee = orderType === "pickup" ? 0 : deliveryFee;
-  const total = Math.max(0, subtotal + effectiveFee - discount);
+  const tip = tipPct ? Math.round(((subtotal * tipPct) / 100) * 100) / 100 : Number(tipCustom) || 0;
+  const total = Math.max(0, subtotal + effectiveFee - discount + tip);
 
   const applyPromo = async () => {
     if (!promoInput.trim()) return;
@@ -114,6 +117,7 @@ function CartInner() {
         total_amount: total,
         delivery_address: orderType === "pickup" ? restaurant?.address || "Pickup" : address,
         delivery_fee: effectiveFee,
+        tip,
         notes,
         status: "pending",
         payment_status: "paid",
@@ -273,6 +277,48 @@ function CartInner() {
               </div>
             )}
 
+            {/* Tip */}
+            <div className="mt-5">
+              <p className="text-sm font-medium mb-2">Add a tip</p>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "No tip", value: 0 },
+                  { label: "10%", value: 10 },
+                  { label: "15%", value: 15 },
+                  { label: "20%", value: 20 },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setTipPct(opt.value);
+                      setTipCustom("");
+                    }}
+                    className={`h-auto py-2 rounded-xl border text-sm font-semibold flex flex-col items-center justify-center gap-0.5 ${
+                      tipPct === opt.value && !tipCustom
+                        ? "bg-primary/15 text-primary border-primary/40"
+                        : "bg-card border-border text-muted-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                    {opt.value > 0 && (
+                      <span className="text-[10px] font-normal opacity-80">${((subtotal * opt.value) / 100).toFixed(2)}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <input
+                value={tipCustom}
+                onChange={(e) => {
+                  setTipCustom(e.target.value);
+                  setTipPct(0);
+                }}
+                placeholder="Custom tip $"
+                type="number"
+                min="0"
+                className="mt-2 w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+
             {/* Promo */}
             <div className="mt-5">
               <p className="text-sm font-medium mb-2 flex items-center gap-2"><Tag className="w-4 h-4 text-primary" /> Promo Code</p>
@@ -320,6 +366,12 @@ function CartInner() {
                 <div className="flex justify-between text-primary">
                   <span>Discount</span>
                   <span>−${discount.toFixed(2)}</span>
+                </div>
+              )}
+              {tip > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Tip</span>
+                  <span>${tip.toFixed(2)}</span>
                 </div>
               )}
               <div className="h-px bg-border my-1" />

@@ -29,12 +29,12 @@ export function CartProvider({ children }) {
   }, []);
 
   const addItem = useCallback(
-    (item, restaurant) => {
+    (item, restaurant, qty = 1) => {
       let rid = restaurantId;
       let rname = restaurantName;
       const existing = items.find((i) => i.menu_item_id === item.id);
       if (existing) {
-        const next = items.map((i) => (i.menu_item_id === item.id ? { ...i, quantity: i.quantity + 1 } : i));
+        const next = items.map((i) => (i.menu_item_id === item.id ? { ...i, quantity: i.quantity + qty } : i));
         persist(next, rid, rname);
         return { added: true };
       }
@@ -50,7 +50,7 @@ export function CartProvider({ children }) {
           menu_item_id: item.id,
           name: item.name,
           price: item.price,
-          quantity: 1,
+          quantity: qty,
           video_url: item.video_url,
         },
       ];

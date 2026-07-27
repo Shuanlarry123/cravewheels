@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { MapPin } from "lucide-react";
+import { MapPin, Plus } from "lucide-react";
 import VideoEngagement from "@/components/VideoEngagement";
 
 export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted }) {
@@ -37,7 +37,15 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
         <Link to={`/restaurant/${item.restaurant_id}`} className="flex items-center gap-2 mb-2">
           <span className="text-sm font-semibold text-white/90">@{item.restaurant_name}</span>
         </Link>
-        <h2 className="text-white text-xl font-bold leading-tight drop-shadow">{item.name}</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-white text-xl font-bold leading-tight drop-shadow flex-1">{item.name}</h2>
+          <button
+            onClick={() => onAdd?.(item)}
+            className="shrink-0 px-4 h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-1.5 active:scale-95 transition-transform shadow-lg"
+          >
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </div>
         <p className="text-white/80 text-sm mt-1 line-clamp-2">{item.description}</p>
         <div className="flex items-center gap-3 mt-2">
           <span className="text-primary font-bold text-lg">${item.price.toFixed(2)}</span>
