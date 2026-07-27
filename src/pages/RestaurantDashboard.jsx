@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Settings as SettingsIcon,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import RestaurantOnboarding from "@/components/restaurant/RestaurantOnboarding";
 import RestaurantProfileForm from "@/components/restaurant/RestaurantProfileForm";
@@ -16,12 +17,14 @@ import MenuItemForm from "@/components/restaurant/MenuItemForm";
 import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
 import RestaurantStats from "@/components/restaurant/RestaurantStats";
 import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
+import RestaurantSpecials from "@/components/restaurant/RestaurantSpecials";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "menu", label: "Menu", icon: Utensils },
+  { id: "specials", label: "Specials", icon: Sparkles },
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "profile", label: "Profile", icon: SettingsIcon },
 ];
@@ -197,6 +200,10 @@ export default function RestaurantDashboard() {
                 <RestaurantMenuGrid items={menuItems} onChanged={() => loadMenu(restaurant.id)} />
               </div>
             </div>
+          )}
+
+          {tab === "specials" && (
+            <RestaurantSpecials items={menuItems} onChanged={() => loadMenu(restaurant.id)} />
           )}
 
           {tab === "orders" && (
