@@ -34,7 +34,7 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
 
       {/* Bottom info */}
       <div className="absolute left-0 right-0 bottom-24 px-4 pb-2 z-20">
-        <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 mb-3">
           <Link
             to={`/restaurant/${item.restaurant_id}`}
             className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full pl-1 pr-3 py-1 border border-white/15"
