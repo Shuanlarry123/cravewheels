@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Minus, Plus, Trash2, MapPin, Tag, Clock, Store, Truck, X } from "lucide-react";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import CustomerLayout from "@/components/CustomerLayout";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { toast } from "react-hot-toast";
 
 const DROPOFF_OPTIONS = ["Leave at door", "Hand to me", "Meet outside"];
@@ -17,6 +18,8 @@ function CartInner() {
   const [scheduledFor, setScheduledFor] = useState("");
   const [dropoff, setDropoff] = useState(DROPOFF_OPTIONS[0]);
   const [address, setAddress] = useState("");
+  const [lat, setLat] = useState(null);
+  const [lng, setLng] = useState(null);
   const [notes, setNotes] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState(null);
@@ -116,6 +119,8 @@ function CartInner() {
         })),
         total_amount: total,
         delivery_address: orderType === "pickup" ? restaurant?.address || "Pickup" : address,
+        latitude: orderType === "delivery" ? lat : null,
+        longitude: orderType === "delivery" ? lng : null,
         delivery_fee: effectiveFee,
         tip,
         notes,
@@ -234,11 +239,13 @@ function CartInner() {
             {orderType === "delivery" ? (
               <div className="mt-5 space-y-3">
                 <label className="text-sm font-medium flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Delivery Address</label>
-                <input
+                <AddressAutocomplete
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street, building, apt..."
-                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                  onChange={setAddress}
+                  onPick={({ lat, lng }) => {
+                    setLat(lat);
+                    setLng(lng);
+                  }}
                 />
                 <label className="text-sm font-medium">Drop-off</label>
                 <select
