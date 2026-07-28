@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { getUserLocation } from "@/lib/distance";
+import { getUserLocation, haversineKm } from "@/lib/distance";
 import DriverLayout from "@/components/DriverLayout";
 import DriverOnboarding from "@/components/driver/DriverOnboarding";
 import AvailableDeliveries from "@/components/driver/AvailableDeliveries";
@@ -155,7 +155,20 @@ export default function DriverDashboard() {
   const myOrder = orders.find(
     (o) => o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
   );
-  const available = orders.filter((o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status));
+  const NEARBY_MI = 15;
+  const rawAvailable = orders.filter((o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status));
+  const available = rawAvailable
+    .map((o) => {
+      const r = restaurants[o.restaurant_id];
+      const radiusMi = r?.delivery_radius_km ? r.delivery_radius_km * 0.621371 : NEARBY_MI;
+      const km =
+        location && r?.latitude != null ? haversineKm(location.lat, location.lng, r.latitude, r.longitude) : null;
+      const mi = km == null ? null : km * 0.621371;
+      return { order: o, mi, inArea: mi == null ? true : mi <= radiusMi };
+    })
+    .filter((e) => e.inArea)
+    .sort((a, b) => (a.mi == null ? 1 : b.mi == null ? -1 : a.mi - b.mi))
+    .map((e) => e.order);
   const myRestaurant = myOrder ? restaurants[myOrder.restaurant_id] : null;
   const pickedUp = myOrder?.status === "picked_up";
   const destLng = myOrder ? (pickedUp ? myOrder.longitude : myRestaurant?.longitude) : undefined;

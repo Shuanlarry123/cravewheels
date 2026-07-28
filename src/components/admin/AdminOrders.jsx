@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Loader2, ChevronRight, Ban, UserCog } from "lucide-react";
+import { Loader2, ChevronRight, Ban, UserCog, Send } from "lucide-react";
 
 const FILTERS = ["all", "pending", "confirmed", "preparing", "picked_up", "delivered", "cancelled"];
 const STATUS_CLS = {
@@ -66,31 +66,15 @@ export default function AdminOrders({ orders, restaurants, users, drivers, onUpd
                 <span className="text-sm font-bold shrink-0">${(o.total_amount || 0).toFixed(2)}</span>
               </div>
 
-              {/* Driver assignment */}
-              <div className="mt-3 flex items-center gap-2">
-                <UserCog className="w-4 h-4 text-muted-foreground shrink-0" />
-                {ad ? (
-                  <span className="text-xs font-medium text-foreground">
-                    {driverLabel(ad)}{" "}
-                    <span className="text-muted-foreground">({ad.vehicle_type})</span>
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Unassigned</span>
-                )}
-                <select
-                  value={o.driver_id || ""}
-                  onChange={(e) => onUpdate(o.id, { driver_id: e.target.value })}
-                  disabled={isBusy}
-                  className="ml-auto h-9 rounded-xl bg-background border border-border px-2 text-xs max-w-[55%]"
-                >
-                  <option value="">— reassign —</option>
-                  {approvedDrivers.map((d) => (
-                    <option key={d.id} value={d.created_by_id}>
-                      {driverLabel(d)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Driver assignment / push */}
+              <DriverPush
+                order={o}
+                ad={ad}
+                isBusy={isBusy}
+                approvedDrivers={approvedDrivers}
+                driverLabel={driverLabel}
+                onUpdate={onUpdate}
+              />
 
               {/* Actions */}
               <div className="mt-2 flex gap-2">
@@ -119,6 +103,68 @@ export default function AdminOrders({ orders, restaurants, users, drivers, onUpd
         })}
         {list.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No orders.</p>}
       </div>
+    </div>
+  );
+}
+
+function DriverPush({ order, ad, isBusy, approvedDrivers, driverLabel, onUpdate }) {
+  const [open, setOpen] = useState(false);
+  const [pick, setPick] = useState("");
+
+  const push = () => {
+    if (!pick) return;
+    onUpdate(order.id, {
+      driver_id: pick,
+      status: order.status === "pending" ? "confirmed" : order.status,
+    });
+    setPick("");
+    setOpen(false);
+  };
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-2">
+        <UserCog className="w-4 h-4 text-muted-foreground shrink-0" />
+        {ad ? (
+          <span className="text-xs font-medium text-foreground">
+            {driverLabel(ad)} <span className="text-muted-foreground">({ad.vehicle_type})</span>
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">Unassigned</span>
+        )}
+        <button
+          onClick={() => setOpen((s) => !s)}
+          disabled={isBusy}
+          className="ml-auto text-xs font-semibold text-primary flex items-center gap-1 px-2 h-9 disabled:opacity-50"
+        >
+          <Send className="w-3.5 h-3.5" /> Push to driver
+        </button>
+      </div>
+      {open && (
+        <div className="mt-2 flex items-center gap-2 pt-2 border-t border-border">
+          <select
+            value={pick}
+            onChange={(e) => setPick(e.target.value)}
+            disabled={isBusy}
+            className="flex-1 h-9 rounded-xl bg-background border border-border px-2 text-xs"
+          >
+            <option value="">Choose a driver…</option>
+            {approvedDrivers.map((d) => (
+              <option key={d.id} value={d.created_by_id}>
+                {driverLabel(d)} · {d.vehicle_type} · {d.is_available ? "online" : "offline"}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={push}
+            disabled={isBusy || !pick}
+            className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+          >
+            {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            Push
+          </button>
+        </div>
+      )}
     </div>
   );
 }
