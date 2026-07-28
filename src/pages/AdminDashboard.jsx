@@ -35,6 +35,7 @@ export default function AdminDashboard() {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [busyOrderId, setBusyOrderId] = useState(null);
 
   const load = useCallback(async () => {
     const [r, d, c, o] = await Promise.all([
@@ -110,6 +111,20 @@ export default function AdminDashboard() {
       await load();
     } finally {
       setBusy(false);
+    }
+  };
+  const updateOrder = async (id, patch) => {
+    setBusyOrderId(id);
+    try {
+      const clean = { ...patch };
+      if (clean.driver_id === "") clean.driver_id = "";
+      await base44.entities.Order.update(id, clean);
+      toast.success("Order updated");
+      await load();
+    } catch {
+      toast.error("Failed to update order");
+    } finally {
+      setBusyOrderId(null);
     }
   };
   const suspendCreator = async (id) => {
@@ -198,7 +213,16 @@ export default function AdminDashboard() {
                     busy={busy}
                   />
                 )}
-                {section === "orders" && <AdminOrders orders={orders} restaurants={restaurants} users={users} />}
+                {section === "orders" && (
+                  <AdminOrders
+                    orders={orders}
+                    restaurants={restaurants}
+                    users={users}
+                    drivers={drivers}
+                    onUpdate={updateOrder}
+                    busyId={busyOrderId}
+                  />
+                )}
                 {section === "revenue" && <AdminRevenue orders={orders} restaurants={restaurants} creators={creators} />}
                 {section === "queue" && (
                   <ApprovalQueue
