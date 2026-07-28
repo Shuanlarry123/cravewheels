@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Send, MessageCircle, Loader2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function CommentSection({ itemId, itemName, restaurantId }) {
   const { user } = useAuth();
@@ -40,8 +41,9 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
       });
       setComments((cs) => [c, ...cs]);
       setText("");
+      toast.success("Comment sent");
     } catch {
-      /* ignore */
+      toast.error("Failed to post comment");
     } finally {
       setPosting(false);
     }

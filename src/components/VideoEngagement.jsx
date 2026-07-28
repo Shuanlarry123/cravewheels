@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, X, Plus } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Heart, Bookmark, MessageCircle, Send, X, Plus, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
 export default function VideoEngagement({ item, active, onAdd }) {
@@ -12,6 +13,8 @@ export default function VideoEngagement({ item, active, onAdd }) {
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [text, setText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (!active || !user) return;
@@ -96,7 +99,8 @@ export default function VideoEngagement({ item, active, onAdd }) {
   };
 
   const submit = async () => {
-    if (!user || !text.trim()) return;
+    if (!user || !text.trim() || posting) return;
+    setPosting(true);
     try {
       const c = await base44.entities.Comment.create({
         menu_item_id: item.id,
@@ -107,8 +111,12 @@ export default function VideoEngagement({ item, active, onAdd }) {
       });
       setComments((cs) => [c, ...cs]);
       setText("");
+      inputRef.current?.blur();
+      toast.success("Comment sent");
     } catch {
-      /* ignore */
+      toast.error("Failed to post comment");
+    } finally {
+      setPosting(false);
     }
   };
 
@@ -178,6 +186,7 @@ export default function VideoEngagement({ item, active, onAdd }) {
             </div>
             <div className="p-3 border-t border-border flex gap-2">
               <input
+                ref={inputRef}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -186,9 +195,10 @@ export default function VideoEngagement({ item, active, onAdd }) {
               />
               <button
                 onClick={submit}
-                className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0"
+                disabled={posting || !text.trim()}
+                className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 disabled:opacity-50"
               >
-                <Send className="w-4 h-4" />
+                {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
           </div>
