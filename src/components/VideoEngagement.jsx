@@ -146,7 +146,7 @@ export default function VideoEngagement({ item, active, onAdd }) {
 
       {showComments && (
         <div
-          className="absolute inset-0 z-30 flex flex-col justify-end bg-black/50"
+          className="absolute inset-0 z-[60] flex flex-col justify-end bg-black/50 pb-16"
           onClick={() => setShowComments(false)}
         >
           <div
