@@ -1,12 +1,16 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Plus } from "lucide-react";
+import { MapPin, Plus, Play } from "lucide-react";
 import VideoEngagement from "@/components/VideoEngagement";
+import { Image } from "@/components/ui/image";
 
-export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted }) {
+export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite }) {
   const videoRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
 
+  // Full-video (non-lite) autoplay behavior
   useEffect(() => {
+    if (lite) return;
     const v = videoRef.current;
     if (!v) return;
     if (active) {
@@ -15,19 +19,61 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
     } else {
       v.pause();
     }
-  }, [active]);
+  }, [active, lite]);
+
+  // In lite mode, stop the video when the card scrolls away
+  useEffect(() => {
+    if (!lite || !playing) return;
+    if (!active) setPlaying(false);
+  }, [active, lite, playing]);
 
   return (
     <section className="relative h-[100dvh] w-full bg-black flex items-center justify-center snap-start overflow-hidden">
-      <video
-        ref={videoRef}
-        src={item.video_url}
-        poster={item.thumbnail_url}
-        loop
-        muted={muted}
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+      {lite ? (
+        playing ? (
+          <video
+            ref={videoRef}
+            src={item.video_url}
+            poster={item.thumbnail_url}
+            loop
+            muted={muted}
+            playsInline
+            autoPlay
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <button
+            onClick={() => setPlaying(true)}
+            className="absolute inset-0 w-full h-full flex items-center justify-center"
+            aria-label="Play video"
+          >
+            {item.thumbnail_url ? (
+              <Image
+                src={item.thumbnail_url}
+                fittingType="fill"
+                className="absolute inset-0 w-full h-full"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-card" />
+            )}
+            <div className="absolute inset-0 bg-black/20" />
+            <span className="relative z-10 w-16 h-16 rounded-full bg-black/55 backdrop-blur flex items-center justify-center ring-1 ring-white/30 active:scale-95 transition-transform">
+              <Play className="w-7 h-7 text-white fill-white translate-x-0.5" />
+            </span>
+          </button>
+        )
+      ) : (
+        <video
+          ref={videoRef}
+          src={item.video_url}
+          poster={item.thumbnail_url}
+          loop
+          muted={muted}
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40 pointer-events-none" />
 
       <VideoEngagement item={item} active={active} onAdd={onAdd} />

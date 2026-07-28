@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { haversineKm, estimateDeliveryMinutes, getUserLocation, timeOfDay } from "@/lib/distance";
 import CustomerLayout from "@/components/CustomerLayout";
+import { useLiteMode } from "@/lib/liteMode";
 
 const FEED_SENTINEL = "__cravereel_feed__";
 
@@ -16,6 +17,7 @@ function FeedInner() {
   const navigate = useNavigate();
   const { addItem, count, subtotal } = useCart();
   const { code: refCode } = useReferral();
+  const [lite] = useLiteMode();
   const [quick, setQuick] = useState(null);
   const [items, setItems] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
@@ -32,24 +34,25 @@ function FeedInner() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const limit = lite ? 20 : 50;
       const [menuItems, rests] = await Promise.all([
-        base44.entities.MenuItem.filter({ is_available: true }, "-views", 50),
+        base44.entities.MenuItem.filter({ is_available: true }, "-views", limit),
         base44.entities.Restaurant.filter({ is_approved: true }, "-created_date", 50),
       ]);
       setRestaurants(rests);
       const restsById = Object.fromEntries(rests.map((r) => [r.id, r]));
       const enriched = menuItems.map((m) => ({ ...m, _restaurant: restsById[m.restaurant_id] }));
-      if (tab === "foryou") {
+      if (tab === "foryou" && !lite) {
         await rankWithAI(enriched);
       } else {
-        setItems(enriched);
+        setItems([...enriched].sort((a, b) => (b.views || 0) - (a.views || 0)));
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, lite]);
 
   const rankWithAI = async (menuItems) => {
     // fallback immediately so feed shows
@@ -240,6 +243,7 @@ function FeedInner() {
                 item={item}
                 active={idx === activeIdx}
                 muted={muted}
+                lite={lite}
                 distanceKm={item._dist}
                 etaMin={item._dist != null ? estimateDeliveryMinutes(item._dist) : null}
                 onAdd={openQuickAdd}

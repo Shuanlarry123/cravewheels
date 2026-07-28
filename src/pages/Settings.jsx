@@ -10,9 +10,12 @@ import {
   Bike,
   Utensils,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
+import { Switch } from "@/components/ui/switch";
+import { useLiteMode } from "@/lib/liteMode";
 
 function Row({ to, icon: Icon, title, desc }) {
   const navigate = useNavigate();
@@ -36,6 +39,7 @@ function Row({ to, icon: Icon, title, desc }) {
 function SettingsInner() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [lite, setLite] = useLiteMode();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -65,6 +69,20 @@ function SettingsInner() {
         <div className="space-y-3 mb-6">
           <Row to="/about" icon={Info} title="About CraveReel" desc="What the platform does and how it works." />
           <Row to="/privacy" icon={ShieldCheck} title="Privacy & Security" desc="What data we collect and how we use GPS." />
+        </div>
+
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1">Performance</h2>
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <Zap className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Lite Mode</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Faster on slower devices. Shows dish thumbnails instead of autoplaying videos and skips AI ranking.
+            </p>
+          </div>
+          <Switch checked={lite} onCheckedChange={setLite} aria-label="Toggle Lite Mode" />
         </div>
 
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1">
