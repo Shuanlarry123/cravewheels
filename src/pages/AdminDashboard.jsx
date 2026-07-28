@@ -73,10 +73,16 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      base44.entities.DriverProfile.filter({ is_available: true }, "-updated_date", 100)
-        .then(setDrivers)
-        .catch(() => {});
+    const id = setInterval(async () => {
+      try {
+        const live = await base44.entities.DriverProfile.list("-updated_date", 200);
+        setDrivers((prev) => {
+          const byId = Object.fromEntries(prev.map((d) => [d.id, d]));
+          return live.map((d) => ({ ...byId[d.id], ...d }));
+        });
+      } catch {
+        /* ignore */
+      }
     }, 15000);
     return () => clearInterval(id);
   }, []);
