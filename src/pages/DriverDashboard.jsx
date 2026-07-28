@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { getUserLocation } from "@/lib/distance";
 import DriverLayout from "@/components/DriverLayout";
@@ -9,8 +9,9 @@ import DriverStats from "@/components/driver/DriverStats";
 import DriverStatsOverview from "@/components/driver/DriverStatsOverview";
 import DirectionsBanner from "@/components/driver/DirectionsBanner";
 import StepsList from "@/components/driver/StepsList";
+import OpenInMaps from "@/components/driver/OpenInMaps";
 import MapboxMap from "@/components/MapboxMap";
-import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
@@ -26,6 +27,7 @@ export default function DriverDashboard() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [showSteps, setShowSteps] = useState(false);
   const [sheetView, setSheetView] = useState("orders");
+  const mapRef = useRef(null);
 
   const loadProfile = useCallback(async (u) => {
     const profs = await base44.entities.DriverProfile.filter({});
@@ -166,6 +168,7 @@ export default function DriverDashboard() {
         <div className="absolute inset-0">
           {token ? (
             <MapboxMap
+              ref={mapRef}
               token={token}
               driverLng={location?.lng}
               driverLat={location?.lat}
@@ -178,6 +181,13 @@ export default function DriverDashboard() {
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           )}
+          <button
+            onClick={() => mapRef.current?.recenter()}
+            className="absolute right-3 bottom-[58%] z-10 w-10 h-10 rounded-full bg-card/95 backdrop-blur border border-border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="Recenter map"
+          >
+            <LocateFixed className="w-5 h-5 text-primary" />
+          </button>
         </div>
 
         {/* Top floating stats + directions banner */}
@@ -217,6 +227,7 @@ export default function DriverDashboard() {
                         <StepsList steps={routeInfo.steps} />
                       </div>
                     )}
+                    <OpenInMaps lat={destLat} lng={destLng} label={pickedUp ? "customer" : "restaurant"} />
                   </>
                 )}
               </>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -20,12 +20,16 @@ async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
   }
 }
 
-export default function MapboxMap({ token, driverLng, driverLat, destLng, destLat, onRouteInfo }) {
+const MapboxMap = forwardRef(function MapboxMap(
+  { token, driverLng, driverLat, destLng, destLat, onRouteInfo },
+  ref
+) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const driverMarkerRef = useRef(null);
   const destMarkerRef = useRef(null);
   const routeSourceRef = useRef(null);
+  const fitRef = useRef(() => {});
 
   useEffect(() => {
     if (!token || !containerRef.current || mapRef.current) return;
@@ -47,9 +51,19 @@ export default function MapboxMap({ token, driverLng, driverLat, destLng, destLa
         layout: { "line-join": "round", "line-cap": "round" },
         paint: { "line-color": "#FF6B2C", "line-width": 5, "line-opacity": 0.9 },
       });
+      // Subtle route casing for an Uber-like look
+      map.addLayer({
+        id: "route-casing",
+        type: "line",
+        source: "route",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.18 },
+      },
+      "route");
       routeSourceRef.current = map.getSource("route");
     });
     map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
+    map.addControl(new mapboxgl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }), "top-right");
     mapRef.current = map;
     return () => {
       map.remove();
@@ -113,6 +127,16 @@ export default function MapboxMap({ token, driverLng, driverLat, destLng, destLa
       map.flyTo({ center: pts[0], zoom: 14 });
     }
   }
+  fitRef.current = fitBounds;
+
+  useImperativeHandle(ref, () => ({
+    recenter: () => fitRef.current(),
+    follow: () => {
+      const map = mapRef.current;
+      if (!map || driverLng == null || driverLat == null) return;
+      map.flyTo({ center: [driverLng, driverLat], zoom: 16, speed: 1.2 });
+    },
+  }));
 
   // Draw route + emit turn-by-turn info
   useEffect(() => {
@@ -139,4 +163,6 @@ export default function MapboxMap({ token, driverLng, driverLat, destLng, destLa
   }, [token, driverLng, driverLat, destLng, destLat]);
 
   return <div ref={containerRef} className="w-full h-full min-h-[300px] rounded-2xl overflow-hidden" />;
-}
+});
+
+export default MapboxMap;
