@@ -148,7 +148,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
 
   return (
     <>
-      <div className="absolute right-3 bottom-28 flex flex-col items-center gap-4 z-20">
+      <div className="absolute right-3 bottom-28 flex flex-col items-center gap-4 z-30">
         <button
           onClick={() => onAdd?.(item)}
           className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg active:scale-90 transition-transform"
