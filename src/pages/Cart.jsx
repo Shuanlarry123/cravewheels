@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Minus, Plus, Trash2, MapPin, Tag, Clock, Store, Truck, X } from "lucide-react";
+import { Minus, Plus, Trash2, MapPin, Tag, Clock, Store, Truck, X, Phone } from "lucide-react";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import CustomerLayout from "@/components/CustomerLayout";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
@@ -21,6 +21,7 @@ function CartInner() {
   const [lat, setLat] = useState(null);
   const [lng, setLng] = useState(null);
   const [notes, setNotes] = useState("");
+  const [phone, setPhone] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState(null);
   const [discount, setDiscount] = useState(0);
@@ -89,6 +90,10 @@ function CartInner() {
       toast.error("Please enter a delivery address");
       return;
     }
+    if (orderType === "delivery" && !phone.trim()) {
+      toast.error("Please enter a contact phone number");
+      return;
+    }
     if (scheduleMode === "later" && !scheduledFor) {
       toast.error("Choose a time for your order");
       return;
@@ -132,6 +137,7 @@ function CartInner() {
         order_type: orderType,
         scheduled_for: scheduleMode === "later" ? scheduledFor : null,
         delivery_instructions: orderType === "delivery" ? dropoff : null,
+        customer_phone: orderType === "delivery" ? phone.trim() : null,
         promo_code: promo?.code || null,
         discount_amount: discount,
       });
@@ -246,6 +252,15 @@ function CartInner() {
                     setLat(lat);
                     setLng(lng);
                   }}
+                />
+                <label className="text-sm font-medium flex items-center gap-2"><Phone className="w-4 h-4 text-primary" /> Contact Phone</label>
+                <input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="Driver will call/text you here"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
                 />
                 <label className="text-sm font-medium">Drop-off</label>
                 <select

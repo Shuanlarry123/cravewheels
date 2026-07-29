@@ -109,6 +109,9 @@
     "discount_amount": {
       "type": "number",
       "default": 0
+    },
+    "customer_phone": {
+      "type": "string"
     }
   },
   "required": [

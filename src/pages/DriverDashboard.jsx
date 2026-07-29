@@ -78,10 +78,18 @@ export default function DriverDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!profile?.is_available) return;
+    if (!profile) return;
     const id = setInterval(() => getUserLocation().then(setLocation), 15000);
     return () => clearInterval(id);
-  }, [profile?.is_available]);
+  }, [profile?.id]);
+
+  // Persist live GPS to the driver profile so customers can track movement
+  useEffect(() => {
+    if (!profile || !location) return;
+    base44.entities.DriverProfile
+      .update(profile.id, { latitude: location.lat, longitude: location.lng })
+      .catch(() => {});
+  }, [location, profile?.id]);
 
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Check, Truck, Store, MessageCircle, Clock, MapPin, Star } from "lucide-react";
+import { ArrowLeft, Check, Truck, Store, MessageCircle, Clock, MapPin, Star, Phone } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { toast } from "react-hot-toast";
@@ -15,6 +15,17 @@ const LABELS = {
   delivered: "Delivered",
 };
 
+async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
+  try {
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&access_token=${token}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.routes?.[0]?.geometry?.coordinates || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function OrderTracking() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,6 +37,8 @@ export default function OrderTracking() {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const driverMarker = useRef(null);
+  const destMarker = useRef(null);
+  const routeSourceRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -44,20 +57,23 @@ export default function OrderTracking() {
       if (event.data?.id === id) {
         base44.entities.Order.get(id).then((o) => {
           setOrder(o);
-          if (o.driver_id && !driver) base44.entities.DriverProfile.get(o.driver_id).then(setDriver).catch(() => {});
+          if (o.driver_id) base44.entities.DriverProfile.get(o.driver_id).then(setDriver).catch(() => {});
         }).catch(() => {});
       }
     });
-    const unsubDriver = base44.entities.DriverProfile.subscribe((event) => {
-      if (order?.driver_id && event.data?.id === order.driver_id) {
+    return () => unsub();
+  }, [id]);
+
+  // Live driver updates once a driver is assigned
+  useEffect(() => {
+    if (!order?.driver_id) return;
+    const unsub = base44.entities.DriverProfile.subscribe((event) => {
+      if (event.data?.id === order.driver_id) {
         base44.entities.DriverProfile.get(order.driver_id).then(setDriver).catch(() => {});
       }
     });
-    return () => {
-      unsub();
-      unsubDriver();
-    };
-  }, [id]);
+    return () => unsub();
+  }, [order?.driver_id]);
 
   // init map once token is available
   useEffect(() => {
@@ -75,11 +91,31 @@ export default function OrderTracking() {
       center,
       zoom: 12,
     });
+    map.on("load", () => {
+      map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } } });
+      map.addLayer({
+        id: "route-casing",
+        type: "line",
+        source: "route",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.18 },
+      });
+      map.addLayer({
+        id: "route",
+        type: "line",
+        source: "route",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#FF6B2C", "line-width": 5, "line-opacity": 0.9 },
+      });
+      routeSourceRef.current = map.getSource("route");
+    });
     mapInstance.current = map;
     return () => {
       map.remove();
       mapInstance.current = null;
       driverMarker.current = null;
+      destMarker.current = null;
+      routeSourceRef.current = null;
     };
   }, [token]);
 
@@ -92,7 +128,7 @@ export default function OrderTracking() {
       .addTo(map);
   }, [restaurant, token]);
 
-  // driver marker (live)
+  // driver marker (live) + route to drop-off
   useEffect(() => {
     const map = mapInstance.current;
     if (!map || !driver || driver.latitude == null) return;
@@ -105,8 +141,32 @@ export default function OrderTracking() {
       el.textContent = "🛵";
       driverMarker.current = new mapboxgl.Marker(el).setLngLat([driver.longitude, driver.latitude]).addTo(map);
     }
-    map.flyTo({ center: [driver.longitude, driver.latitude], zoom: 13 });
-  }, [driver, token]);
+    // destination marker (customer drop-off)
+    if (order?.latitude != null) {
+      if (!destMarker.current) {
+        destMarker.current = new mapboxgl.Marker({ color: "#FF6B2C" }).setLngLat([order.longitude, order.latitude]).addTo(map);
+      } else {
+        destMarker.current.setLngLat([order.longitude, order.latitude]);
+      }
+    }
+    // draw live route driver -> drop-off
+    if (order?.latitude != null && token) {
+      fetchRoute(token, driver.longitude, driver.latitude, order.longitude, order.latitude).then((coords) => {
+        if (!routeSourceRef.current) return;
+        if (coords?.length) {
+          routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: coords } });
+          const bounds = coords.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+          bounds.extend([driver.longitude, driver.latitude]);
+          bounds.extend([order.longitude, order.latitude]);
+          map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+        } else {
+          map.flyTo({ center: [driver.longitude, driver.latitude], zoom: 13 });
+        }
+      });
+    } else {
+      map.flyTo({ center: [driver.longitude, driver.latitude], zoom: 13 });
+    }
+  }, [driver, order, token]);
 
   if (loading)
     return (
@@ -175,12 +235,20 @@ export default function OrderTracking() {
                 <Star className="w-3 h-3 fill-primary text-primary" /> {(driver.rating || 5).toFixed(1)} · {driver.total_deliveries || 0} trips
               </p>
             </div>
-            <button
-              onClick={() => toast("In-app chat with your driver is coming soon.")}
-              className="h-10 px-4 rounded-xl bg-primary/15 text-primary text-sm font-semibold flex items-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4" /> Contact
-            </button>
+            <div className="flex gap-2">
+              {driver.phone ? (
+                <>
+                  <a href={`tel:${driver.phone}`} className="h-10 w-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center" aria-label="Call driver">
+                    <Phone className="w-4 h-4" />
+                  </a>
+                  <a href={`sms:${driver.phone}`} className="h-10 px-4 rounded-xl bg-primary/15 text-primary text-sm font-semibold flex items-center gap-2" aria-label="Text driver">
+                    <MessageCircle className="w-4 h-4" /> Text
+                  </a>
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground self-center">No phone available</span>
+              )}
+            </div>
           </div>
         )}
 

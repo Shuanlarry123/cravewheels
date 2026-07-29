@@ -1,5 +1,5 @@
 import React from "react";
-import { Store, MapPin, Navigation, CheckCircle2, Phone } from "lucide-react";
+import { Store, MapPin, Navigation, CheckCircle2, Phone, MessageCircle } from "lucide-react";
 import PickupReference from "@/components/driver/PickupReference";
 
 export default function ActiveDeliveryCard({ order, restaurant, onPickup, onDeliver, busy }) {
@@ -31,6 +31,17 @@ export default function ActiveDeliveryCard({ order, restaurant, onPickup, onDeli
           <span className="text-muted-foreground">{order.delivery_address || "Customer address"}</span>
         </div>
       </div>
+
+      {order.customer_phone && (
+        <div className="flex gap-2 mb-3">
+          <a href={`tel:${order.customer_phone}`} className="flex-1 h-10 rounded-xl bg-primary/15 text-primary text-sm font-semibold flex items-center justify-center gap-2">
+            <Phone className="w-4 h-4" /> Call
+          </a>
+          <a href={`sms:${order.customer_phone}`} className="flex-1 h-10 rounded-xl bg-primary/15 text-primary text-sm font-semibold flex items-center justify-center gap-2">
+            <MessageCircle className="w-4 h-4" /> Text
+          </a>
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-sm mb-3 pb-3 border-b border-border">
         <span className="text-muted-foreground">Your earnings</span>
