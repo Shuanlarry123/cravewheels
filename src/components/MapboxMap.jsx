@@ -51,6 +51,7 @@ const MapboxMap = forwardRef(function MapboxMap(
   const routeSourceRef = useRef(null);
   const headingRef = useRef(null);
   const prevPosRef = useRef(null);
+  const pulseMarkerRef = useRef(null);
   const fitRef = useRef(() => {});
 
   useEffect(() => {
@@ -66,22 +67,30 @@ const MapboxMap = forwardRef(function MapboxMap(
     });
     map.on("load", () => {
       map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } } });
+      // Soft orange glow under the route for depth on a tilted map
       map.addLayer({
-        id: "route",
+        id: "route-glow",
         type: "line",
         source: "route",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#FF6B2C", "line-width": 5, "line-opacity": 0.9 },
+        paint: { "line-color": "#FF6B2C", "line-width": 22, "line-opacity": 0.22, "line-blur": 6 },
       });
-      // Subtle route casing for an Uber-like look
+      // White casing border, like in-car turn-by-turn navigation
       map.addLayer({
         id: "route-casing",
         type: "line",
         source: "route",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.18 },
-      },
-      "route");
+        paint: { "line-color": "#ffffff", "line-width": 12, "line-opacity": 0.95 },
+      });
+      // Bright orange core on top
+      map.addLayer({
+        id: "route",
+        type: "line",
+        source: "route",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#FF6B2C", "line-width": 6, "line-opacity": 1 },
+      });
       routeSourceRef.current = map.getSource("route");
     });
     mapRef.current = map;
@@ -91,6 +100,7 @@ const MapboxMap = forwardRef(function MapboxMap(
       driverMarkerRef.current = null;
       destMarkerRef.current = null;
       routeSourceRef.current = null;
+      pulseMarkerRef.current = null;
     };
   }, [token]);
 
@@ -107,6 +117,24 @@ const MapboxMap = forwardRef(function MapboxMap(
     }
     prevPosRef.current = { lng: driverLng, lat: driverLat };
     const heading = headingRef.current;
+
+    // Pulsing location "flash" behind the driver arrow (navigation mode only)
+    if (follow) {
+      if (!pulseMarkerRef.current) {
+        const pEl = document.createElement("div");
+        pEl.className = "driver-pulse";
+        pEl.innerHTML =
+          '<div class="driver-pulse-ring"></div><div class="driver-pulse-ring driver-pulse-ring--2"></div>';
+        pulseMarkerRef.current = new mapboxgl.Marker(pEl)
+          .setLngLat([driverLng, driverLat])
+          .addTo(map);
+      } else {
+        pulseMarkerRef.current.setLngLat([driverLng, driverLat]);
+      }
+    } else if (pulseMarkerRef.current) {
+      pulseMarkerRef.current.remove();
+      pulseMarkerRef.current = null;
+    }
 
     if (!driverMarkerRef.current) {
       driverMarkerRef.current = new mapboxgl.Marker({
