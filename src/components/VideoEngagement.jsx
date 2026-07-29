@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Send, X, Plus, Loader2, Share2, Link2, Copy, Check, ShieldCheck, Lock } from "lucide-react";
+import { Heart, MessageCircle, Send, X, Plus, Loader2, ShieldCheck, Lock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useOrderedItems } from "@/lib/useOrderedItems";
@@ -17,18 +17,10 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
   const [showComments, setShowComments] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [copied, setCopied] = useState(false);
   const inputRef = useRef(null);
   const orderedIds = useOrderedItems();
   const canComment = !!orderedIds?.has(item.id);
   const [rating, setRating] = useState(5);
-  const shareUrl = `${window.location.origin}/item/${item.id}`;
-  const shareData = {
-    title: `${item.name} — ${item.restaurant_name} · CraveReel`,
-    text: `Check out ${item.name} from ${item.restaurant_name} on CraveReel!`,
-    url: shareUrl,
-  };
 
   useEffect(() => {
     if (!active || !user) return;
@@ -79,60 +71,6 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
       }
     } catch {
       /* ignore */
-    }
-  };
-
-  const copyLink = async () => {
-    const copyLegacy = () => {
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = shareUrl;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        const ok = document.execCommand("copy");
-        document.body.removeChild(ta);
-        return ok;
-      } catch {
-        return false;
-      }
-    };
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-      } else if (copyLegacy()) {
-        // copied via legacy path
-      } else {
-        toast.error("Select the link above to copy it manually");
-        return;
-      }
-      setCopied(true);
-      toast.success("Link copied to clipboard");
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      toast.error("Select the link above to copy it manually");
-    }
-  };
-
-  const nativeShare = async () => {
-    try {
-      if (navigator.share) await navigator.share(shareData);
-    } catch (e) {
-      if (e?.name !== "AbortError") toast.error("Sharing not available — copy the link instead");
-    }
-  };
-
-  const share = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (e) {
-        if (e?.name !== "AbortError") setShowShare(true);
-      }
-    } else {
-      setShowShare(true);
     }
   };
 
@@ -198,66 +136,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
         </div>
 
         <TriedItButton itemId={item.id} itemName={item.name} restaurantId={item.restaurant_id} />
-
-        <button onClick={share} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
-          <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
-            <Share2 className="w-6 h-6 text-white" />
-          </span>
-          <span className="text-white text-xs font-medium">Share</span>
-        </button>
       </div>
-
-      {showShare && (
-        <div
-          className="absolute inset-0 z-[60] flex flex-col justify-end bg-black/60"
-          onClick={() => setShowShare(false)}
-        >
-          <div
-            className="bg-card border-t border-border rounded-t-2xl p-4 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Share this dish</span>
-              <button onClick={() => setShowShare(false)}>
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-            {typeof navigator !== "undefined" && navigator.share && (
-              <button
-                onClick={nativeShare}
-                className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              >
-                <Share2 className="w-4 h-4" /> Share via apps
-              </button>
-            )}
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Dish link</label>
-              <div className="flex gap-2">
-                <input
-                  readOnly
-                  value={shareUrl}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="flex-1 h-11 rounded-xl bg-background border border-border px-3 text-sm min-w-0"
-                />
-                <button
-                  onClick={copyLink}
-                  className={cn(
-                    "h-11 px-4 rounded-xl text-sm font-semibold flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform",
-                    copied ? "bg-green-600 text-white" : "bg-primary text-primary-foreground"
-                  )}
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {copied ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
-                <Link2 className="w-3 h-3" />
-                Tap the link to select it, then long-press to copy on mobile.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showComments && (
         <div
