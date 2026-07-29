@@ -15,7 +15,6 @@ export default function RatingSummary({ avg, orders }) {
       ) : (
         <span className="text-white/70 text-xs font-semibold">New</span>
       )}
-      <span className="text-white/60 text-xs">({orders.toLocaleString()} verified orders)</span>
     </div>
   );
 }
