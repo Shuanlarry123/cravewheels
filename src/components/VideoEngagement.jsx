@@ -74,15 +74,43 @@ export default function VideoEngagement({ item, active, onAdd }) {
       text: `Check out ${item.name} from ${item.restaurant_name} on CraveReel!`,
       url,
     };
+    const copyLegacy = () => {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    };
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-      } else {
+        return;
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return; // user dismissed the sheet
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
+        return;
       }
     } catch {
-      /* user cancelled or share failed */
+      /* clipboard blocked (e.g. insecure context) */
+    }
+    if (copyLegacy()) {
+      toast.success("Link copied to clipboard");
+    } else {
+      toast.error("Couldn't copy — open in a published app to share");
     }
   };
 
