@@ -16,6 +16,13 @@
     },
     "comment": {
       "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "verified": {
+      "type": "boolean",
+      "default": true
     }
   },
   "required": [

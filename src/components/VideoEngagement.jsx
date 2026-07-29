@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Send, X, Plus, Loader2, Share2, Link2, Copy, Check } from "lucide-react";
+import { Heart, MessageCircle, Send, X, Plus, Loader2, Share2, Link2, Copy, Check, ShieldCheck, Lock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { useOrderedItems } from "@/lib/useOrderedItems";
+import StarRating from "@/components/comments/StarRating";
+import VerifiedComment from "@/components/comments/VerifiedComment";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +19,9 @@ export default function VideoEngagement({ item, active, onAdd }) {
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState(false);
   const inputRef = useRef(null);
+  const orderedIds = useOrderedItems();
+  const canComment = !!orderedIds?.has(item.id);
+  const [rating, setRating] = useState(5);
   const shareUrl = `${window.location.origin}/item/${item.id}`;
   const shareData = {
     title: `${item.name} — ${item.restaurant_name} · CraveReel`,
@@ -131,6 +137,10 @@ export default function VideoEngagement({ item, active, onAdd }) {
 
   const submit = async () => {
     if (!user || !text.trim() || posting) return;
+    if (!canComment) {
+      toast.error("Only customers who ordered this dish can comment");
+      return;
+    }
     setPosting(true);
     try {
       const c = await base44.entities.Comment.create({
@@ -139,9 +149,12 @@ export default function VideoEngagement({ item, active, onAdd }) {
         restaurant_id: item.restaurant_id,
         author_name: user.full_name || user.email,
         comment: text.trim(),
+        rating,
+        verified: true,
       });
       setComments((cs) => [c, ...cs]);
       setText("");
+      setRating(5);
       inputRef.current?.blur();
       toast.success("Comment sent");
     } catch {
@@ -246,45 +259,52 @@ export default function VideoEngagement({ item, active, onAdd }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-3 border-b border-border">
-              <span className="text-sm font-semibold">{comments.length} comments</span>
+              <span className="text-sm font-semibold flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-primary" /> Verified comments
+              </span>
               <button onClick={() => setShowComments(false)}>
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
               {comments.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-6">No comments yet. Be the first!</p>
+                <p className="text-center text-sm text-muted-foreground py-6">
+                  No verified comments yet. Order this dish to be the first!
+                </p>
               ) : (
-                comments.map((c) => (
-                  <div key={c.id} className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                      {(c.author_name || "U")[0]?.toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold">{c.author_name || "User"}</p>
-                      <p className="text-sm text-muted-foreground">{c.comment}</p>
-                    </div>
-                  </div>
-                ))
+                comments.map((c) => <VerifiedComment key={c.id} comment={c} />)
               )}
             </div>
-            <div className="p-3 border-t border-border flex gap-2">
-              <input
-                ref={inputRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()}
-                placeholder="Add a comment..."
-                className="flex-1 h-10 rounded-full bg-background border border-border px-4 text-sm"
-              />
-              <button
-                onClick={submit}
-                disabled={posting || !text.trim()}
-                className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 disabled:opacity-50"
-              >
-                {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </button>
-            </div>
+            {canComment ? (
+              <div className="p-3 border-t border-border space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">Your rating:</span>
+                  <StarRating value={rating} onChange={setRating} size={16} />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && submit()}
+                    placeholder="Share your experience..."
+                    className="flex-1 h-10 rounded-full bg-background border border-border px-4 text-sm"
+                  />
+                  <button
+                    onClick={submit}
+                    disabled={posting || !text.trim()}
+                    className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 disabled:opacity-50"
+                  >
+                    {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span>Only customers who ordered this dish can comment.</span>
+              </div>
+            )}
           </div>
         </div>
       )}
