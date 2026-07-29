@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { base44 } from "@/api/base44Client";
 import RestaurantVideoMenu from "@/components/restaurant/RestaurantVideoMenu";
+import RestaurantCraves from "@/components/restaurant/RestaurantCraves";
 import { ArrowLeft, Star, Store, Radio, MapPin } from "lucide-react";
 
 export default function RestaurantProfile() {
@@ -93,6 +94,8 @@ export default function RestaurantProfile() {
           <h2 className="text-sm font-bold mb-3">Video Menu</h2>
           <RestaurantVideoMenu items={menu} />
         </div>
+
+        <RestaurantCraves restaurantId={id} />
       </div>
     </div>
   );
