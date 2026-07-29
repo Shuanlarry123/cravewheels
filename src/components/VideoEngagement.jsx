@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, X, Plus, Loader2 } from "lucide-react";
+import { Heart, Bookmark, MessageCircle, Send, X, Plus, Loader2, Share2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "react-hot-toast";
@@ -98,6 +98,25 @@ export default function VideoEngagement({ item, active, onAdd }) {
     }
   };
 
+  const share = async () => {
+    const url = `${window.location.origin}/item/${item.id}`;
+    const shareData = {
+      title: `${item.name} — ${item.restaurant_name} · CraveReel`,
+      text: `Check out ${item.name} from ${item.restaurant_name} on CraveReel!`,
+      url,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      }
+    } catch {
+      /* user cancelled or share failed */
+    }
+  };
+
   const submit = async () => {
     if (!user || !text.trim() || posting) return;
     setPosting(true);
@@ -149,6 +168,12 @@ export default function VideoEngagement({ item, active, onAdd }) {
             <Bookmark className={cn("w-6 h-6", saved ? "fill-primary text-primary" : "text-white")} />
           </span>
           <span className="text-white text-xs font-medium">{saved ? "Saved" : "Save"}</span>
+        </button>
+        <button onClick={share} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
+          <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
+            <Share2 className="w-6 h-6 text-white" />
+          </span>
+          <span className="text-white text-xs font-medium">Share</span>
         </button>
       </div>
 
