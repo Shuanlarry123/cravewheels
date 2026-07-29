@@ -8,6 +8,8 @@
 // A restaurant can't pay to inflate these — they only move with real customer behaviour.
 
 const REACTION_VALUE = { loved: 100, good: 80, average: 55, not_worth: 25 };
+// Reaction → 0-5 star value for the "⭐ 4.8" display.
+export const REACTION_STAR = { loved: 5, good: 4, average: 3, not_worth: 2 };
 const WEIGHTS = { rating: 0.4, repeat: 0.25, likes: 0.15, comments: 0.12, saves: 0.08 };
 const cap = (v, max) => Math.min(100, (v / max) * 100);
 

@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { MapPin, Plus, Play } from "lucide-react";
 import VideoEngagement from "@/components/VideoEngagement";
 import CraveScoreBadge from "@/components/CraveScoreBadge";
+import RatingSummary from "@/components/RatingSummary";
 import { Image } from "@/components/ui/image";
 
-export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite, ordersCount, craveScore }) {
+export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite, ordersCount, craveScore, ratingInfo, orderInfoByUser }) {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
 
@@ -77,7 +78,7 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40 pointer-events-none" />
 
-      <VideoEngagement item={item} active={active} onAdd={onAdd} ordersCount={ordersCount} />
+      <VideoEngagement item={item} active={active} onAdd={onAdd} ordersCount={ordersCount} orderInfoByUser={orderInfoByUser} />
 
       {/* Bottom info */}
       <div className="absolute left-0 right-0 bottom-24 px-4 pb-2 z-20">
@@ -105,6 +106,7 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
           <CraveScoreBadge score={craveScore?.score} hasData={craveScore?.hasData} />
         </div>
         <h2 className="text-white text-2xl font-extrabold leading-tight drop-shadow-lg">{item.name}</h2>
+        <RatingSummary avg={ratingInfo?.avg} orders={ratingInfo?.orders} />
         <p className="text-white/85 text-sm mt-2 line-clamp-2 drop-shadow">{item.description}</p>
         {distanceKm != null && (
           <div className="mt-2 inline-flex items-center gap-1.5 bg-black/35 backdrop-blur-md text-white/90 text-xs font-medium rounded-full px-2.5 py-1 border border-white/10">

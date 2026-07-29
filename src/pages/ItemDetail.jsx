@@ -6,7 +6,8 @@ import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 import CommentSection from "@/components/CommentSection";
 import CraveScoreBadge from "@/components/CraveScoreBadge";
-import { computeCraveScore } from "@/lib/craveScore";
+import RatingSummary from "@/components/RatingSummary";
+import { computeCraveScore, REACTION_STAR } from "@/lib/craveScore";
 
 function ItemInner() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ function ItemInner() {
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
   const [crave, setCrave] = useState(null);
+  const [ratingInfo, setRatingInfo] = useState(null);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -49,6 +51,7 @@ function ItemInner() {
         ]);
         const customers = new Set();
         const customerOrders = {};
+        let orderCount = 0;
         orders.forEach((o) => {
           if (o.status === "cancelled") return;
           const person = o.created_by_id || o.id;
@@ -56,10 +59,19 @@ function ItemInner() {
             if (it?.menu_item_id === id) {
               customers.add(person);
               customerOrders[person] = (customerOrders[person] || 0) + 1;
+              orderCount++;
             }
           });
         });
         const repeatCustomers = Object.values(customerOrders).filter((n) => n > 1).length;
+        const ratings = [
+          ...tried.map((t) => REACTION_STAR[t.reaction] ?? 3),
+          ...comments.map((c) => c.rating).filter(Boolean),
+        ];
+        setRatingInfo({
+          avg: ratings.length ? ratings.reduce((s, r) => s + r, 0) / ratings.length : null,
+          orders: orderCount,
+        });
         setCrave(
           computeCraveScore({
             likes: likes.length,
@@ -141,6 +153,9 @@ function ItemInner() {
         <p className="text-primary text-xl font-bold mt-1">${item.price.toFixed(2)}</p>
         <div className="mt-3">
           <CraveScoreBadge score={crave?.score} hasData={crave?.hasData} />
+        </div>
+        <div className="mt-2">
+          <RatingSummary avg={ratingInfo?.avg} orders={ratingInfo?.orders} />
         </div>
         <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{item.description}</p>
 

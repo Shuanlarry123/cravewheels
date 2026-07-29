@@ -9,7 +9,7 @@ import TriedItButton from "@/components/comments/TriedItButton";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
-export default function VideoEngagement({ item, active, onAdd, ordersCount }) {
+export default function VideoEngagement({ item, active, onAdd, ordersCount, orderInfoByUser }) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -282,7 +282,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount }) {
                   No verified comments yet. Order this dish to be the first!
                 </p>
               ) : (
-                comments.map((c) => <VerifiedComment key={c.id} comment={c} />)
+                comments.map((c) => <VerifiedComment key={c.id} comment={c} orderInfo={orderInfoByUser} />)
               )}
             </div>
             {canComment ? (

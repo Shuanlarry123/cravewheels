@@ -1,6 +1,7 @@
 import React from "react";
 import { BadgeCheck } from "lucide-react";
 import StarRating from "@/components/comments/StarRating";
+import OrderBadge from "@/components/comments/OrderBadge";
 
 /**
  * Renders a single comment.
@@ -8,7 +9,7 @@ import StarRating from "@/components/comments/StarRating";
  * they ordered, their star rating, and their text. Legacy (unverified) comments
  * render plainly without the badge.
  */
-export default function VerifiedComment({ comment: c }) {
+export default function VerifiedComment({ comment: c, orderInfo }) {
   const verified = c.verified === true;
   return (
     <div className="flex gap-2.5">
@@ -24,10 +25,10 @@ export default function VerifiedComment({ comment: c }) {
             </span>
           )}
         </div>
-        {verified && c.menu_item_name && (
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            ✅ Ordered the {c.menu_item_name}
-          </p>
+        {verified && (
+          <div className="mt-0.5">
+            <OrderBadge info={orderInfo?.[c.created_by_id]} itemName={c.menu_item_name} />
+          </div>
         )}
         {verified && c.rating ? (
           <StarRating value={c.rating} size={12} className="mt-1" />

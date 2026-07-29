@@ -10,7 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { haversineKm, estimateDeliveryMinutes, getUserLocation, timeOfDay } from "@/lib/distance";
 import CustomerLayout from "@/components/CustomerLayout";
 import { useLiteMode } from "@/lib/liteMode";
-import { computeCraveScore } from "@/lib/craveScore";
+import { computeCraveScore, REACTION_STAR } from "@/lib/craveScore";
+import RatingSummary from "@/components/RatingSummary";
 
 const FEED_SENTINEL = "__cravereel_feed__";
 
@@ -31,6 +32,8 @@ function FeedInner() {
   const [promoRestIds, setPromoRestIds] = useState(new Set());
   const [ordersCount, setOrdersCount] = useState({});
   const [craveScores, setCraveScores] = useState({});
+  const [ratingInfo, setRatingInfo] = useState({});
+  const [orderInfoMap, setOrderInfoMap] = useState({});
   const containerRef = useRef(null);
   const ioRef = useRef(null);
 
@@ -54,25 +57,33 @@ function FeedInner() {
       const agg = {};
       const get = (mid) => {
         if (!agg[mid])
-          agg[mid] = { likes: 0, comments: 0, saves: 0, reactions: [], commentRatings: [], customers: new Set(), customerOrders: {} };
+          agg[mid] = { likes: 0, comments: 0, saves: 0, reactions: [], commentRatings: [], ratings: [], orders: 0, customers: new Set(), customerOrders: {} };
         return agg[mid];
       };
       likesAll.forEach((l) => { if (l.menu_item_id) get(l.menu_item_id).likes++; });
-      commentsAll.forEach((c) => { if (!c.menu_item_id) return; const a = get(c.menu_item_id); a.comments++; if (c.rating) a.commentRatings.push(c.rating); });
+      commentsAll.forEach((c) => { if (!c.menu_item_id) return; const a = get(c.menu_item_id); a.comments++; if (c.rating) { a.commentRatings.push(c.rating); a.ratings.push(c.rating); } });
       savedAll.forEach((s) => { if (s.menu_item_id) get(s.menu_item_id).saves++; });
-      triedAll.forEach((t) => { if (t.menu_item_id) get(t.menu_item_id).reactions.push(t.reaction); });
+      triedAll.forEach((t) => { if (!t.menu_item_id) return; const a = get(t.menu_item_id); a.reactions.push(t.reaction); a.ratings.push(REACTION_STAR[t.reaction] ?? 3); });
+      const orderInfoByItem = {};
       orders.forEach((o) => {
         if (o.status === "cancelled") return;
         const person = o.created_by_id || o.id;
+        const created = o.created_date;
         (o.items || []).forEach((it) => {
           if (!it?.menu_item_id) return;
           const a = get(it.menu_item_id);
           a.customers.add(person);
           a.customerOrders[person] = (a.customerOrders[person] || 0) + 1;
+          a.orders++;
+          const m = orderInfoByItem[it.menu_item_id] || (orderInfoByItem[it.menu_item_id] = {});
+          const u = m[person] || (m[person] = { count: 0, lastDate: null });
+          u.count++;
+          if (!u.lastDate || new Date(created) > new Date(u.lastDate)) u.lastDate = created;
         });
       });
       const oCount = {};
       const scores = {};
+      const rInfo = {};
       Object.entries(agg).forEach(([mid, a]) => {
         const distinctCustomers = a.customers.size;
         const repeatCustomers = Object.values(a.customerOrders).filter((n) => n > 1).length;
@@ -86,9 +97,15 @@ function FeedInner() {
           distinctCustomers,
           repeatCustomers,
         });
+        rInfo[mid] = {
+          avg: a.ratings.length ? a.ratings.reduce((s, r) => s + r, 0) / a.ratings.length : null,
+          orders: a.orders,
+        };
       });
       setOrdersCount(oCount);
       setCraveScores(scores);
+      setRatingInfo(rInfo);
+      setOrderInfoMap(orderInfoByItem);
       if (tab === "foryou" && !lite) {
         await rankWithAI(enriched);
       } else {
@@ -295,6 +312,8 @@ function FeedInner() {
                 etaMin={item._dist != null ? estimateDeliveryMinutes(item._dist) : null}
                 ordersCount={ordersCount[item.id] || 0}
                 craveScore={craveScores[item.id]}
+                ratingInfo={ratingInfo[item.id]}
+                orderInfoByUser={orderInfoMap[item.id] || {}}
                 onAdd={openQuickAdd}
               />
             </div>

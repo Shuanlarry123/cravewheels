@@ -17,6 +17,7 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
   const [text, setText] = useState("");
   const [rating, setRating] = useState(5);
   const [posting, setPosting] = useState(false);
+  const [orderInfo, setOrderInfo] = useState({});
 
   const load = async () => {
     try {
@@ -33,6 +34,31 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
     load();
     const unsub = base44.entities.Comment.subscribe(() => load());
     return unsub;
+  }, [itemId]);
+
+  // Per-author order history for this dish → powers the "✅ Ordered 3 times" badges.
+  useEffect(() => {
+    (async () => {
+      try {
+        const orders = await base44.entities.Order.filter({}, "-created_date", 500);
+        const map = {};
+        orders.forEach((o) => {
+          if (o.status === "cancelled") return;
+          const person = o.created_by_id;
+          if (!person) return;
+          const created = o.created_date;
+          (o.items || []).forEach((it) => {
+            if (it?.menu_item_id !== itemId) return;
+            const u = map[person] || (map[person] = { count: 0, lastDate: null });
+            u.count++;
+            if (!u.lastDate || new Date(created) > new Date(u.lastDate)) u.lastDate = created;
+          });
+        });
+        setOrderInfo(map);
+      } catch {
+        /* ignore */
+      }
+    })();
   }, [itemId]);
 
   const submit = async () => {
@@ -115,7 +141,7 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
       ) : (
         <div className="space-y-3">
           {comments.map((c) => (
-            <VerifiedComment key={c.id} comment={c} />
+            <VerifiedComment key={c.id} comment={c} orderInfo={orderInfo} />
           ))}
         </div>
       )}
