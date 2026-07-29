@@ -20,7 +20,8 @@ export default function AdminOrders({ orders, restaurants, users, drivers, onUpd
   const list = f === "all" ? orders : orders.filter((o) => o.status === f);
 
   const approvedDrivers = drivers.filter((d) => d.is_approved);
-  const driverLabel = (d) => userById[d.created_by_id]?.full_name || userById[d.created_by_id]?.email || "Driver";
+  const driverLabel = (d) =>
+    d.legal_full_name || userById[d.created_by_id]?.full_name || userById[d.created_by_id]?.email || "Driver";
   const assignedDriver = (o) => drivers.find((d) => d.created_by_id === o.driver_id);
 
   return (
