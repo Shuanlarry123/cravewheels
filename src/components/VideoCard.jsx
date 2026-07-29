@@ -4,7 +4,7 @@ import { MapPin, Plus, Play } from "lucide-react";
 import VideoEngagement from "@/components/VideoEngagement";
 import { Image } from "@/components/ui/image";
 
-export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite }) {
+export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite, ordersCount }) {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
 
@@ -76,7 +76,7 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40 pointer-events-none" />
 
-      <VideoEngagement item={item} active={active} onAdd={onAdd} />
+      <VideoEngagement item={item} active={active} onAdd={onAdd} ordersCount={ordersCount} />
 
       {/* Bottom info */}
       <div className="absolute left-0 right-0 bottom-24 px-4 pb-2 z-20">

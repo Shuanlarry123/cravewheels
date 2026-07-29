@@ -9,7 +9,7 @@ import TriedItButton from "@/components/comments/TriedItButton";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
-export default function VideoEngagement({ item, active, onAdd }) {
+export default function VideoEngagement({ item, active, onAdd, ordersCount }) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -178,7 +178,7 @@ export default function VideoEngagement({ item, active, onAdd }) {
           <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
             <Heart className={cn("w-6 h-6", liked ? "fill-primary text-primary" : "text-white")} />
           </span>
-          <span className="text-white text-xs font-medium">{likeCount}</span>
+          <span className="text-white text-xs font-medium">{likeCount.toLocaleString()}</span>
         </button>
         <button
           onClick={() => setShowComments((s) => !s)}
@@ -187,8 +187,15 @@ export default function VideoEngagement({ item, active, onAdd }) {
           <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
             <MessageCircle className="w-6 h-6 text-white" />
           </span>
-          <span className="text-white text-xs font-medium">{comments.length}</span>
+          <span className="text-white text-xs font-medium">{comments.length.toLocaleString()}</span>
         </button>
+
+        <div className="flex flex-col items-center gap-1">
+          <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-2xl leading-none">
+            📦
+          </span>
+          <span className="text-white text-xs font-medium">{Number(ordersCount || 0).toLocaleString()}</span>
+        </div>
 
         <TriedItButton itemId={item.id} itemName={item.name} restaurantId={item.restaurant_id} />
 

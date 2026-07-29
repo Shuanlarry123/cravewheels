@@ -28,6 +28,7 @@ function FeedInner() {
   const [radius, setRadius] = useState(10);
   const [muted, setMuted] = useState(true);
   const [promoRestIds, setPromoRestIds] = useState(new Set());
+  const [ordersCount, setOrdersCount] = useState({});
   const containerRef = useRef(null);
   const ioRef = useRef(null);
 
@@ -35,13 +36,28 @@ function FeedInner() {
     setLoading(true);
     try {
       const limit = lite ? 20 : 50;
-      const [menuItems, rests] = await Promise.all([
+      const [menuItems, rests, orders] = await Promise.all([
         base44.entities.MenuItem.filter({ is_available: true }, "-views", limit),
         base44.entities.Restaurant.filter({ is_approved: true }, "-created_date", 50),
+        base44.entities.Order.filter({}, "-created_date", 500),
       ]);
       setRestaurants(rests);
       const restsById = Object.fromEntries(rests.map((r) => [r.id, r]));
       const enriched = menuItems.map((m) => ({ ...m, _restaurant: restsById[m.restaurant_id] }));
+      // "people ordered this" — distinct customers per dish (excludes cancelled)
+      const peopleByItem = {};
+      orders.forEach((o) => {
+        if (o.status === "cancelled") return;
+        const person = o.created_by_id || o.id;
+        (o.items || []).forEach((it) => {
+          if (!it?.menu_item_id) return;
+          if (!peopleByItem[it.menu_item_id]) peopleByItem[it.menu_item_id] = new Set();
+          peopleByItem[it.menu_item_id].add(person);
+        });
+      });
+      setOrdersCount(
+        Object.fromEntries(Object.entries(peopleByItem).map(([k, s]) => [k, s.size]))
+      );
       if (tab === "foryou" && !lite) {
         await rankWithAI(enriched);
       } else {
@@ -246,6 +262,7 @@ function FeedInner() {
                 lite={lite}
                 distanceKm={item._dist}
                 etaMin={item._dist != null ? estimateDeliveryMinutes(item._dist) : null}
+                ordersCount={ordersCount[item.id] || 0}
                 onAdd={openQuickAdd}
               />
             </div>
