@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Plus, Play } from "lucide-react";
 import VideoEngagement from "@/components/VideoEngagement";
+import CraveScoreBadge from "@/components/CraveScoreBadge";
 import { Image } from "@/components/ui/image";
 
-export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite, ordersCount }) {
+export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, muted, lite, ordersCount, craveScore }) {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
 
@@ -99,6 +100,9 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
             </span>
             ${item.price.toFixed(2)}
           </button>
+        </div>
+        <div className="mb-2">
+          <CraveScoreBadge score={craveScore?.score} hasData={craveScore?.hasData} />
         </div>
         <h2 className="text-white text-2xl font-extrabold leading-tight drop-shadow-lg">{item.name}</h2>
         <p className="text-white/85 text-sm mt-2 line-clamp-2 drop-shadow">{item.description}</p>

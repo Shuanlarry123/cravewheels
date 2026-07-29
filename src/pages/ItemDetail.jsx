@@ -5,6 +5,8 @@ import { ArrowLeft, Minus, Plus, ShoppingBag, Store } from "lucide-react";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 import CommentSection from "@/components/CommentSection";
+import CraveScoreBadge from "@/components/CraveScoreBadge";
+import { computeCraveScore } from "@/lib/craveScore";
 
 function ItemInner() {
   const { id } = useParams();
@@ -15,6 +17,7 @@ function ItemInner() {
   const [restaurant, setRestaurant] = useState(null);
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [crave, setCrave] = useState(null);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -30,6 +33,46 @@ function ItemInner() {
         base44.entities.MenuItem.update(id, { views: (m.views || 0) + 1 }).catch(() => {});
       } finally {
         setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [likes, comments, saved, tried, orders] = await Promise.all([
+          base44.entities.Like.filter({ menu_item_id: id }, "-created_date", 500),
+          base44.entities.Comment.filter({ menu_item_id: id }, "-created_date", 500),
+          base44.entities.Saved.filter({ menu_item_id: id }, "-created_date", 500),
+          base44.entities.TriedIt.filter({ menu_item_id: id }, "-created_date", 500),
+          base44.entities.Order.filter({}, "-created_date", 500),
+        ]);
+        const customers = new Set();
+        const customerOrders = {};
+        orders.forEach((o) => {
+          if (o.status === "cancelled") return;
+          const person = o.created_by_id || o.id;
+          (o.items || []).forEach((it) => {
+            if (it?.menu_item_id === id) {
+              customers.add(person);
+              customerOrders[person] = (customerOrders[person] || 0) + 1;
+            }
+          });
+        });
+        const repeatCustomers = Object.values(customerOrders).filter((n) => n > 1).length;
+        setCrave(
+          computeCraveScore({
+            likes: likes.length,
+            comments: comments.length,
+            saves: saved.length,
+            reactions: tried.map((t) => t.reaction),
+            commentRatings: comments.map((c) => c.rating).filter(Boolean),
+            distinctCustomers: customers.size,
+            repeatCustomers,
+          })
+        );
+      } catch {
+        /* ignore */
       }
     })();
   }, [id]);
@@ -96,6 +139,9 @@ function ItemInner() {
 
         <h1 className="text-2xl font-bold">{item.name}</h1>
         <p className="text-primary text-xl font-bold mt-1">${item.price.toFixed(2)}</p>
+        <div className="mt-3">
+          <CraveScoreBadge score={crave?.score} hasData={crave?.hasData} />
+        </div>
         <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{item.description}</p>
 
         <div className="flex items-center justify-between mt-6">

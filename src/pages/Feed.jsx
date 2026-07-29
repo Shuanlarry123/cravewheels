@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { haversineKm, estimateDeliveryMinutes, getUserLocation, timeOfDay } from "@/lib/distance";
 import CustomerLayout from "@/components/CustomerLayout";
 import { useLiteMode } from "@/lib/liteMode";
+import { computeCraveScore } from "@/lib/craveScore";
 
 const FEED_SENTINEL = "__cravereel_feed__";
 
@@ -29,6 +30,7 @@ function FeedInner() {
   const [muted, setMuted] = useState(true);
   const [promoRestIds, setPromoRestIds] = useState(new Set());
   const [ordersCount, setOrdersCount] = useState({});
+  const [craveScores, setCraveScores] = useState({});
   const containerRef = useRef(null);
   const ioRef = useRef(null);
 
@@ -36,28 +38,57 @@ function FeedInner() {
     setLoading(true);
     try {
       const limit = lite ? 20 : 50;
-      const [menuItems, rests, orders] = await Promise.all([
+      const [menuItems, rests, orders, likesAll, commentsAll, savedAll, triedAll] = await Promise.all([
         base44.entities.MenuItem.filter({ is_available: true }, "-views", limit),
         base44.entities.Restaurant.filter({ is_approved: true }, "-created_date", 50),
         base44.entities.Order.filter({}, "-created_date", 500),
+        base44.entities.Like.filter({}, "-created_date", 500),
+        base44.entities.Comment.filter({}, "-created_date", 500),
+        base44.entities.Saved.filter({}, "-created_date", 500),
+        base44.entities.TriedIt.filter({}, "-created_date", 500),
       ]);
       setRestaurants(rests);
       const restsById = Object.fromEntries(rests.map((r) => [r.id, r]));
       const enriched = menuItems.map((m) => ({ ...m, _restaurant: restsById[m.restaurant_id] }));
-      // "people ordered this" — distinct customers per dish (excludes cancelled)
-      const peopleByItem = {};
+      // Aggregate reputation signals per dish → Crave Score + people-ordered count.
+      const agg = {};
+      const get = (mid) => {
+        if (!agg[mid])
+          agg[mid] = { likes: 0, comments: 0, saves: 0, reactions: [], commentRatings: [], customers: new Set(), customerOrders: {} };
+        return agg[mid];
+      };
+      likesAll.forEach((l) => { if (l.menu_item_id) get(l.menu_item_id).likes++; });
+      commentsAll.forEach((c) => { if (!c.menu_item_id) return; const a = get(c.menu_item_id); a.comments++; if (c.rating) a.commentRatings.push(c.rating); });
+      savedAll.forEach((s) => { if (s.menu_item_id) get(s.menu_item_id).saves++; });
+      triedAll.forEach((t) => { if (t.menu_item_id) get(t.menu_item_id).reactions.push(t.reaction); });
       orders.forEach((o) => {
         if (o.status === "cancelled") return;
         const person = o.created_by_id || o.id;
         (o.items || []).forEach((it) => {
           if (!it?.menu_item_id) return;
-          if (!peopleByItem[it.menu_item_id]) peopleByItem[it.menu_item_id] = new Set();
-          peopleByItem[it.menu_item_id].add(person);
+          const a = get(it.menu_item_id);
+          a.customers.add(person);
+          a.customerOrders[person] = (a.customerOrders[person] || 0) + 1;
         });
       });
-      setOrdersCount(
-        Object.fromEntries(Object.entries(peopleByItem).map(([k, s]) => [k, s.size]))
-      );
+      const oCount = {};
+      const scores = {};
+      Object.entries(agg).forEach(([mid, a]) => {
+        const distinctCustomers = a.customers.size;
+        const repeatCustomers = Object.values(a.customerOrders).filter((n) => n > 1).length;
+        oCount[mid] = distinctCustomers;
+        scores[mid] = computeCraveScore({
+          likes: a.likes,
+          comments: a.comments,
+          saves: a.saves,
+          reactions: a.reactions,
+          commentRatings: a.commentRatings,
+          distinctCustomers,
+          repeatCustomers,
+        });
+      });
+      setOrdersCount(oCount);
+      setCraveScores(scores);
       if (tab === "foryou" && !lite) {
         await rankWithAI(enriched);
       } else {
@@ -263,6 +294,7 @@ function FeedInner() {
                 distanceKm={item._dist}
                 etaMin={item._dist != null ? estimateDeliveryMinutes(item._dist) : null}
                 ordersCount={ordersCount[item.id] || 0}
+                craveScore={craveScores[item.id]}
                 onAdd={openQuickAdd}
               />
             </div>
