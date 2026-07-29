@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
  * Drag the handle down to collapse (reveal the map) or up to expand details.
  * snapFracs are fractions of the parent container height.
  */
-export default function CollapsibleSheet({ snapFracs = [0.14, 0.5, 0.92], defaultSnap = 1, children }) {
+export default function CollapsibleSheet({ snapFracs = [0.06, 0.42, 0.92], defaultSnap = 1, children }) {
   const ref = useRef(null);
   const [parentH, setParentH] = useState(600);
   const [snap, setSnap] = useState(defaultSnap);
