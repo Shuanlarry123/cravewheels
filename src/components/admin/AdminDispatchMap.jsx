@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import { Bike, Package, Navigation, X, Phone, MapPin, Store, List, Sparkles, LocateFixed } from "lucide-react";
+import { Bike, Package, Navigation, X, Phone, MapPin, Store, List, Sparkles, LocateFixed, Flame } from "lucide-react";
 
 const ACTIVE = ["confirmed", "preparing", "picked_up"];
 
@@ -67,8 +67,11 @@ export default function AdminDispatchMap({ data }) {
   const dropoffMarkersRef = useRef({});
   const newOrderMarkersRef = useRef({});
   const routeSourceRef = useRef(null);
+  const heatSourceRef = useRef(null);
+  const heatPointsRef = useRef({ type: "FeatureCollection", features: [] });
   const [selectedId, setSelectedId] = useState(null);
   const [listOpen, setListOpen] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(true);
 
   const userById = useMemo(() => Object.fromEntries((users || []).map((u) => [u.id, u])), [users]);
   const restById = useMemo(() => Object.fromEntries((restaurants || []).map((r) => [r.id, r])), [restaurants]);
@@ -100,6 +103,22 @@ export default function AdminDispatchMap({ data }) {
     [orders, restById]
   );
 
+  // Order-volume heatmap points — customer delivery coords, falling back to
+  // the restaurant location so every order contributes a point.
+  const heatPoints = useMemo(() => {
+    const feats = [];
+    (orders || []).forEach((o) => {
+      const rest = restById[o.restaurant_id];
+      const lng = o.longitude != null ? o.longitude : rest?.longitude;
+      const lat = o.latitude != null ? o.latitude : rest?.latitude;
+      if (lng != null && lat != null) {
+        feats.push({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] } });
+      }
+    });
+    return { type: "FeatureCollection", features: feats };
+  }, [orders, restById]);
+  heatPointsRef.current = heatPoints;
+
   const activeDriverUserIds = useMemo(() => new Set(deliveries.map((d) => d.driver.created_by_id)), [deliveries]);
   const activeDrivers = useMemo(
     () =>
@@ -123,6 +142,33 @@ export default function AdminDispatchMap({ data }) {
     });
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
     map.on("load", () => {
+      map.addSource("order-heatmap-src", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: "order-heatmap",
+        type: "heatmap",
+        source: "order-heatmap-src",
+        maxzoom: 15,
+        paint: {
+          "heatmap-weight": ["interpolate", ["linear"], ["heatmap-density"], 0, 0, 0.5, 1.2],
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
+          "heatmap-color": [
+            "interpolate", ["linear"], ["heatmap-density"],
+            0, "rgba(0,0,0,0)",
+            0.2, "#14b8a6",
+            0.4, "#facc15",
+            0.6, "#fb923c",
+            0.8, "#ef4444",
+            1, "#b91c1c",
+          ],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 18, 15, 55],
+          "heatmap-opacity": 0.7,
+        },
+      });
+      heatSourceRef.current = map.getSource("order-heatmap-src");
+      heatSourceRef.current?.setData(heatPointsRef.current);
       map.addSource("routes", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -159,6 +205,7 @@ export default function AdminDispatchMap({ data }) {
       dropoffMarkersRef.current = {};
       newOrderMarkersRef.current = {};
       routeSourceRef.current = null;
+      heatSourceRef.current = null;
     };
   }, [token]);
 
@@ -277,6 +324,18 @@ export default function AdminDispatchMap({ data }) {
     };
   }, [deliveries, token]);
 
+  // Push latest order-volume points into the heatmap source
+  useEffect(() => {
+    heatSourceRef.current?.setData(heatPoints);
+  }, [heatPoints]);
+
+  // Toggle heatmap layer visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer("order-heatmap")) return;
+    map.setLayoutProperty("order-heatmap", "visibility", showHeatmap ? "visible" : "none");
+  }, [showHeatmap]);
+
   const recenter = () => {
     const map = mapRef.current;
     if (!map) return;
@@ -348,6 +407,15 @@ export default function AdminDispatchMap({ data }) {
         className="absolute top-24 left-3 z-10 h-9 px-3 rounded-xl bg-card/95 border border-border shadow-lg flex items-center gap-1.5 text-xs font-semibold"
       >
         <List className="w-4 h-4" /> {listOpen ? "Hide" : "Drivers"}
+      </button>
+
+      <button
+        onClick={() => setShowHeatmap((s) => !s)}
+        className={`absolute top-24 right-3 z-10 h-9 px-3 rounded-xl border shadow-lg flex items-center gap-1.5 text-xs font-semibold ${
+          showHeatmap ? "bg-primary/20 border-primary/40 text-primary" : "bg-card/95 border-border"
+        }`}
+      >
+        <Flame className="w-4 h-4" /> {showHeatmap ? "Heatmap on" : "Heatmap"}
       </button>
 
       {/* Driver list panel */}
@@ -495,6 +563,13 @@ export default function AdminDispatchMap({ data }) {
         <div className="flex items-center gap-2">
           <span className="w-4 h-4 rounded-full border-2 border-green-400" />
           <span className="text-muted-foreground">New order (unassigned)</span>
+        </div>
+        <div className="flex items-center gap-2 pt-1 border-t border-border mt-1">
+          <span
+            className="w-4 h-4 rounded-full"
+            style={{ background: "linear-gradient(90deg,#14b8a6,#facc15,#fb923c,#ef4444)" }}
+          />
+          <span className="text-muted-foreground">Order volume (heatmap)</span>
         </div>
       </div>
     </div>
