@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import VideoCard from "@/components/VideoCard";
 import QuickAddSheet from "@/components/QuickAddSheet";
 import ViewBasketBar from "@/components/ViewBasketBar";
+import PullToRefresh from "@/components/PullToRefresh";
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -230,7 +231,7 @@ function FeedInner() {
   return (
     <CustomerLayout>
       {/* Header tabs */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-center gap-1 pt-3 pb-2 bg-gradient-to-b from-black/70 to-transparent">
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-center gap-1 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 bg-gradient-to-b from-black/70 to-transparent">
         <button
           onClick={() => setTab("foryou")}
           className={`px-4 py-1 text-sm font-semibold rounded-full transition-colors ${
@@ -262,14 +263,14 @@ function FeedInner() {
       {/* Mute toggle */}
       <button
         onClick={() => setMuted((m) => !m)}
-        className="fixed top-3 right-3 z-50 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
+        className="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] right-3 z-50 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white"
       >
         {muted ? "🔇" : "🔊"}
       </button>
 
       {/* Near me radius filter */}
       {tab === "nearme" && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 flex gap-1.5">
+        <div className="fixed top-[calc(env(safe-area-inset-top)+3.5rem)] left-1/2 -translate-x-1/2 z-40 flex gap-1.5">
           {[2, 5, 10, 999].map((r) => (
             <button
               key={r}
@@ -300,7 +301,7 @@ function FeedInner() {
           </p>
         </div>
       ) : (
-        <div ref={containerRef} className="h-[100dvh] overflow-y-scroll snap-feed no-scrollbar">
+        <PullToRefresh ref={containerRef} onRefresh={load} className="h-[100dvh] overflow-y-scroll snap-feed no-scrollbar">
           {visibleItems.map((item, idx) => (
             <div key={item.id} data-idx={idx}>
               <VideoCard
@@ -318,7 +319,7 @@ function FeedInner() {
               />
             </div>
           ))}
-        </div>
+        </PullToRefresh>
       )}
       <ViewBasketBar count={count} subtotal={subtotal} onClick={() => navigate("/cart")} />
       <QuickAddSheet item={quick} onAdd={confirmQuickAdd} onClose={() => setQuick(null)} />

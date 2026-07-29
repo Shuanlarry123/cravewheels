@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Loader2, ChevronRight, Ban, UserCog, Send } from "lucide-react";
+import { Loader2, ChevronRight, Ban, UserCog, Send, ChevronDown } from "lucide-react";
+import SelectSheet from "@/components/SelectSheet";
 
 const FILTERS = ["all", "pending", "confirmed", "preparing", "picked_up", "delivered", "cancelled"];
 const STATUS_CLS = {
@@ -111,6 +112,7 @@ export default function AdminOrders({ orders, restaurants, users, drivers, onUpd
 function DriverPush({ order, ad, isBusy, approvedDrivers, driverLabel, onUpdate }) {
   const [open, setOpen] = useState(false);
   const [pick, setPick] = useState("");
+  const [driverOpen, setDriverOpen] = useState(false);
 
   const push = () => {
     if (!pick) return;
@@ -143,19 +145,29 @@ function DriverPush({ order, ad, isBusy, approvedDrivers, driverLabel, onUpdate 
       </div>
       {open && (
         <div className="mt-2 flex items-center gap-2 pt-2 border-t border-border">
-          <select
-            value={pick}
-            onChange={(e) => setPick(e.target.value)}
+          <button
+            type="button"
+            onClick={() => setDriverOpen(true)}
             disabled={isBusy}
-            className="flex-1 h-9 rounded-xl bg-background border border-border px-2 text-xs"
+            className="flex-1 h-9 rounded-xl bg-background border border-border px-2 text-xs text-left flex items-center justify-between"
           >
-            <option value="">Choose a driver…</option>
-            {approvedDrivers.map((d) => (
-              <option key={d.id} value={d.created_by_id}>
-                {driverLabel(d)} · {d.vehicle_type} · {d.is_available ? "online" : "offline"}
-              </option>
-            ))}
-          </select>
+            <span className="truncate">
+              {pick ? driverLabel(approvedDrivers.find((d) => d.created_by_id === pick)) : "Choose a driver…"}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
+          </button>
+          <SelectSheet
+            open={driverOpen}
+            onOpenChange={setDriverOpen}
+            value={pick}
+            onChange={(v) => setPick(v)}
+            options={approvedDrivers.map((d) => ({
+              value: d.created_by_id,
+              label: `${driverLabel(d)} · ${d.vehicle_type} · ${d.is_available ? "online" : "offline"}`,
+            }))}
+            placeholder="Choose a driver…"
+            title="Assign Driver"
+          />
           <button
             onClick={push}
             disabled={isBusy || !pick}

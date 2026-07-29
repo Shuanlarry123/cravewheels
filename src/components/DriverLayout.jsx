@@ -41,7 +41,7 @@ export default function DriverLayout({ children }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-md min-h-screen relative">{children}</div>
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md border-t border-border bg-background/95 backdrop-blur-md z-50">
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md border-t border-border bg-background/95 backdrop-blur-md z-50 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16 px-1">
           {nav.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
@@ -76,7 +76,7 @@ export default function DriverLayout({ children }) {
         <div className="fixed inset-0 z-[60] flex items-end justify-center" onClick={() => setMoreOpen(false)}>
           <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative w-full max-w-md bg-card border-t border-border rounded-t-2xl p-4 pb-8"
+            className="relative w-full max-w-md bg-card border-t border-border rounded-t-2xl p-4 pb-[calc(env(safe-area-inset-bottom)+2rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">

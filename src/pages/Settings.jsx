@@ -11,12 +11,25 @@ import {
   Utensils,
   Sparkles,
   Zap,
+  Trash2,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 import { Switch } from "@/components/ui/switch";
 import { useLiteMode } from "@/lib/liteMode";
 import { useAdminRole } from "@/lib/useAdminRole";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "react-hot-toast";
 
 function Row({ to, icon: Icon, title, desc }) {
   const navigate = useNavigate();
@@ -42,6 +55,21 @@ function SettingsInner() {
   const [user, setUser] = useState(null);
   const [lite, setLite] = useLiteMode();
   const isAdmin = useAdminRole();
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await Promise.allSettled([
+        base44.entities.DriverProfile.deleteMany({ created_by_id: user.id }),
+        base44.entities.CreatorProfile.deleteMany({ created_by_id: user.id }),
+      ]);
+      await base44.auth.logout("/login");
+    } catch {
+      toast.error("Failed to delete account");
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -116,6 +144,39 @@ function SettingsInner() {
           To switch between Browsing, Driver, Restaurant, or Influencer mode, log out and choose your role
           on the login screen.
         </p>
+
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-red-500 mb-2 px-1 mt-8">Danger Zone</h2>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button className="w-full flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 active:scale-[0.99] transition-transform text-left">
+              <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-500">Delete Account</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Permanently remove your account and all associated data.</p>
+              </div>
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action is irreversible. You will permanently lose all order history, driver and restaurant profiles, creator referrals, saved dishes, likes, and comments.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="bg-red-500 text-white hover:bg-red-600"
+              >
+                {deleting ? "Deleting..." : "Delete Account"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </CustomerLayout>
   );

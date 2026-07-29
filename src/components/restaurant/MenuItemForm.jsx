@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
+import SelectSheet from "@/components/SelectSheet";
+import { cn } from "@/lib/utils";
+
+const CATEGORIES = ["Breakfast", "Lunch", "Dinner", "Specials", "Desserts", "Drinks", "Bowls", "Other"];
 
 export default function MenuItemForm({ restaurant, onCreated }) {
   const [form, setForm] = useState({ name: "", description: "", price: "", category: "", thumbnail_url: "" });
   const [video, setVideo] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -59,17 +64,24 @@ export default function MenuItemForm({ restaurant, onCreated }) {
         <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Description" rows={2} className="w-full rounded-xl bg-background border border-border p-3 text-sm" />
         <div className="grid grid-cols-2 gap-2">
           <input value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="Price ($)" type="number" inputMode="decimal" className={inputCls} />
-          <select
-            value={form.category}
-            onChange={(e) => set("category", e.target.value)}
-            className={inputCls}
+          <button
+            type="button"
+            onClick={() => setCategoryOpen(true)}
+            className={cn(inputCls, "text-left flex items-center justify-between", !form.category && "text-muted-foreground")}
           >
-            <option value="">Select category…</option>
-            {["Breakfast", "Lunch", "Dinner", "Specials", "Desserts", "Drinks", "Bowls", "Other"].map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+            <span>{form.category || "Select category…"}</span>
+            <ChevronDown className="w-4 h-4 opacity-50" />
+          </button>
         </div>
+        <SelectSheet
+          open={categoryOpen}
+          onOpenChange={setCategoryOpen}
+          value={form.category}
+          onChange={(v) => set("category", v)}
+          options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+          placeholder="Select category…"
+          title="Category"
+        />
         <input value={form.thumbnail_url} onChange={(e) => set("thumbnail_url", e.target.value)} placeholder="Thumbnail URL (optional)" className={inputCls} />
         <button onClick={submit} disabled={saving} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
           {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Plus className="w-4 h-4" /> Add to menu</>}
