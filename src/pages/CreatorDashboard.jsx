@@ -5,6 +5,7 @@ import { ChevronLeft, Sparkles } from "lucide-react";
 import CreatorOnboarding from "@/components/creator/CreatorOnboarding";
 import CreatorStats from "@/components/creator/CreatorStats";
 import CreatorShares from "@/components/creator/CreatorShares";
+import ReferredCustomers from "@/components/creator/ReferredCustomers";
 import { toast } from "react-hot-toast";
 
 export default function CreatorDashboard() {
@@ -70,10 +71,11 @@ export default function CreatorDashboard() {
           <CreatorStats profile={profile} />
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
-              Shared Dishes ({shares.length})
+              Active Links ({shares.length})
             </h2>
             <CreatorShares shares={shares} />
           </div>
+          <ReferredCustomers referralCode={profile.referral_code} />
         </div>
       </div>
     </div>
