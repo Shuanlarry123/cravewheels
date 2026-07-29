@@ -1,0 +1,40 @@
+{
+  "name": "Driver Assignment Alert",
+  "description": "Instantly notifies a driver (in-app + email) when a new delivery order is assigned to them, directing them to the dispatch map",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Order",
+      "events": [
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.changed_fields | index(\"driver_id\") != null and (.trigger.data.driver_id // \"\") != \"\" and (.trigger.old_data.driver_id // \"\") == \"\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "driver_assignment_alert",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify_driver": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyDriverAssignment",
+            "args": {
+              "order_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Notify driver",
+            "description": "Send assignment alert"
+          }
+        }
+      }
+    ]
+  }
+}

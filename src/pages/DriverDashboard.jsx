@@ -77,6 +77,37 @@ export default function DriverDashboard() {
     return unsub;
   }, []);
 
+  // Instant in-app alert when a new delivery is assigned — routes the driver to the dispatch map
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsub = base44.entities.Notification.subscribe((event) => {
+      if (event.type !== "create") return;
+      const n = event.data;
+      if (!n || n.user_id !== user.id || n.type !== "order_assigned") return;
+      toast(
+        (t) => (
+          <div className="flex items-center gap-3 pr-1">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">New delivery assigned</p>
+              <p className="text-xs text-muted-foreground line-clamp-2">{n.body}</p>
+            </div>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                mapRef.current?.follow();
+              }}
+              className="ml-auto shrink-0 text-xs font-semibold text-primary px-2 py-1.5 rounded-lg bg-primary/15"
+            >
+              Open map
+            </button>
+          </div>
+        ),
+        { duration: 8000 }
+      );
+    });
+    return unsub;
+  }, [user?.id]);
+
   // Real-time GPS tracking — continuous fixes for the driver's own map, with
   // throttled DB writes so customers see near-real-time movement on tracking.
   const lastPersistRef = useRef(0);
