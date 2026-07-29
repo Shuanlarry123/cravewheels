@@ -20,6 +20,26 @@ async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
   }
 }
 
+function bearing(lng1, lat1, lng2, lat2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const toDeg = (r) => (r * 180) / Math.PI;
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δλ = toRad(lng2 - lng1);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function makeArrowEl() {
+  const el = document.createElement("div");
+  el.style.cssText =
+    "width:36px;height:36px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));";
+  el.innerHTML =
+    '<svg width="36" height="36" viewBox="0 0 24 24"><path d="M12 2 L20 21 L12 16 L4 21 Z" fill="#FF6B2C" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  return el;
+}
+
 const MapboxMap = forwardRef(function MapboxMap(
   { token, driverLng, driverLat, destLng, destLat, onRouteInfo, follow },
   ref
@@ -29,6 +49,8 @@ const MapboxMap = forwardRef(function MapboxMap(
   const driverMarkerRef = useRef(null);
   const destMarkerRef = useRef(null);
   const routeSourceRef = useRef(null);
+  const headingRef = useRef(null);
+  const prevPosRef = useRef(null);
   const fitRef = useRef(() => {});
 
   useEffect(() => {
@@ -72,25 +94,56 @@ const MapboxMap = forwardRef(function MapboxMap(
     };
   }, [token]);
 
-  // Update driver marker
+  // Update driver marker + driving-style navigation view (3D, course-up, follow)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || driverLng == null || driverLat == null) return;
-    const el = document.createElement("div");
-    el.style.cssText =
-      "width:20px;height:20px;border-radius:50%;background:#FF6B2C;border:3px solid #fff;box-shadow:0 0 0 4px rgba(255,107,44,0.35);";
+
+    // Derive heading from movement so the map rotates in the direction of travel
+    const prev = prevPosRef.current;
+    if (prev) {
+      const moved = Math.abs(driverLng - prev.lng) + Math.abs(driverLat - prev.lat);
+      if (moved > 0.0001) headingRef.current = bearing(prev.lng, prev.lat, driverLng, driverLat);
+    }
+    prevPosRef.current = { lng: driverLng, lat: driverLat };
+    const heading = headingRef.current;
+
     if (!driverMarkerRef.current) {
-      driverMarkerRef.current = new mapboxgl.Marker(el).setLngLat([driverLng, driverLat]).addTo(map);
+      driverMarkerRef.current = new mapboxgl.Marker({
+        element: makeArrowEl(),
+        rotationAlignment: "map",
+      })
+        .setLngLat([driverLng, driverLat])
+        .addTo(map);
+      if (heading != null) driverMarkerRef.current.setRotation(heading);
     } else {
       driverMarkerRef.current.setLngLat([driverLng, driverLat]);
+      if (heading != null) driverMarkerRef.current.setRotation(heading);
     }
+
     if (follow) {
-      const z = map.getZoom();
-      map.easeTo({ center: [driverLng, driverLat], zoom: z < 15 ? 16 : z, duration: 800 });
+      map.easeTo({
+        center: [driverLng, driverLat],
+        bearing: heading ?? map.getBearing(),
+        pitch: 60,
+        zoom: 17,
+        duration: 1000,
+      });
     } else {
       fitBounds();
     }
   }, [driverLng, driverLat, follow]);
+
+  // Reset to a flat, north-up overview when leaving navigation mode
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!follow) {
+      headingRef.current = null;
+      prevPosRef.current = null;
+      map.easeTo({ pitch: 0, bearing: 0, duration: 600 });
+    }
+  }, [follow]);
 
   // Update destination marker
   useEffect(() => {
@@ -133,11 +186,31 @@ const MapboxMap = forwardRef(function MapboxMap(
   fitRef.current = fitBounds;
 
   useImperativeHandle(ref, () => ({
-    recenter: () => fitRef.current(),
+    recenter: () => {
+      const map = mapRef.current;
+      if (!map) return;
+      if (follow && driverLng != null && driverLat != null) {
+        map.easeTo({
+          center: [driverLng, driverLat],
+          bearing: headingRef.current ?? 0,
+          pitch: 60,
+          zoom: 17,
+          duration: 800,
+        });
+      } else {
+        fitRef.current();
+      }
+    },
     follow: () => {
       const map = mapRef.current;
       if (!map || driverLng == null || driverLat == null) return;
-      map.flyTo({ center: [driverLng, driverLat], zoom: 16, speed: 1.2 });
+      map.easeTo({
+        center: [driverLng, driverLat],
+        bearing: headingRef.current ?? 0,
+        pitch: 60,
+        zoom: 17,
+        duration: 800,
+      });
     },
   }));
 
