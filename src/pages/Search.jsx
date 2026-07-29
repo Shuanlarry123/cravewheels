@@ -21,7 +21,7 @@ function SearchInner() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await base44.entities.Restaurant.filter({ is_approved: true }, "-rating", 30);
+        const r = await base44.entities.Restaurant.filter({ is_approved: true }, "-rating", 200);
         setRestaurants(r);
         const t = await base44.functions.invoke("getMapboxToken", {});
         setToken(t.data?.token || null);
