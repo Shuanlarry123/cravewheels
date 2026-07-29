@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Store, Users, Package } from "lucide-react";
+import { Store, Users, Package, Bike } from "lucide-react";
 import AdminLiveMap from "./AdminLiveMap";
 import RestaurantPreview from "./RestaurantPreview";
 import UserPreview from "./UserPreview";
@@ -41,19 +41,28 @@ export default function AdminMapSection({ data }) {
   const approvedRestaurants = restaurants.filter(
     (r) => r.is_approved && r.latitude != null && r.longitude != null
   );
-  const onlineDrivers = drivers.filter((d) => d.is_available && d.latitude != null && d.longitude != null);
   const activeOrders = orders.filter((o) => ACTIVE.includes(o.status));
+  const activeDriverUserIds = new Set(activeOrders.map((o) => o.driver_id).filter(Boolean));
+  const onlineDrivers = drivers.filter(
+    (d) =>
+      d.latitude != null &&
+      d.longitude != null &&
+      (d.is_available || activeDriverUserIds.has(d.created_by_id))
+  );
 
   const mapDeliveries = activeOrders
     .map((o) => {
       const r = restaurantById[o.restaurant_id];
+      const drv = driverByUserId[o.driver_id];
       return {
         ...o,
         restaurant: r,
-        driver: driverByUserId[o.driver_id],
+        driver: drv,
         customer: usersById[o.created_by_id],
-        latitude: r?.latitude,
-        longitude: r?.longitude,
+        // Follow the assigned driver's live position once picked up; otherwise
+        // show the delivery at the restaurant (pickup) location.
+        latitude: drv?.latitude ?? r?.latitude ?? o.latitude,
+        longitude: drv?.longitude ?? r?.longitude ?? o.longitude,
       };
     })
     .filter((o) => o.latitude != null && o.longitude != null);
@@ -95,6 +104,7 @@ export default function AdminMapSection({ data }) {
       <div className="absolute top-0 inset-x-0 z-10 p-3 bg-gradient-to-b from-background/90 to-transparent pb-8">
         <div className="flex gap-2">
           <Count icon={Store} label="Restaurants" value={approvedRestaurants.length} color="#FF6B2C" />
+          <Count icon={Bike} label="Active drivers" value={onlineDrivers.length} color="#22c55e" />
           <Count icon={Users} label="Active Users" value={mapUsers.length} color="#a855f7" />
           <Count icon={Package} label="Deliveries" value={mapDeliveries.length} color="#3b82f6" />
         </div>

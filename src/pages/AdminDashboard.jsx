@@ -85,7 +85,7 @@ export default function AdminDashboard() {
       } catch {
         /* ignore */
       }
-    }, 15000);
+    }, 5000);
     return () => clearInterval(id);
   }, []);
 

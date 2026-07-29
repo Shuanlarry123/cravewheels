@@ -24,7 +24,7 @@ export default function AdminLiveMap({
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]);
+  const markersRef = useRef({});
   const fitRef = useRef(false);
 
   useEffect(() => {
@@ -41,6 +41,7 @@ export default function AdminLiveMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      markersRef.current = {};
       fitRef.current = false;
     };
   }, [token]);
@@ -48,51 +49,64 @@ export default function AdminLiveMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-    const points = [];
+    const seen = new Set();
 
-    restaurants.forEach((r) => {
-      if (r.latitude == null || r.longitude == null) return;
-      const m = new mapboxgl.Marker(makeMarker("#FF6B2C", "🍴", () => onSelectRestaurant?.(r)))
-        .setLngLat([r.longitude, r.latitude])
-        .addTo(map);
-      markersRef.current.push(m);
-      points.push([r.longitude, r.latitude]);
+    const upsert = (key, lat, lng, color, emoji, onClick) => {
+      if (lat == null || lng == null) return;
+      seen.add(key);
+      const existing = markersRef.current[key];
+      if (existing) {
+        existing.marker.setLngLat([lng, lat]);
+      } else {
+        const m = new mapboxgl.Marker(makeMarker(color, emoji, onClick))
+          .setLngLat([lng, lat])
+          .addTo(map);
+        markersRef.current[key] = { marker: m };
+      }
+    };
+
+    restaurants.forEach((r) =>
+      upsert(`r:${r.id}`, r.latitude, r.longitude, "#FF6B2C", "🍴", () => onSelectRestaurant?.(r))
+    );
+    drivers.forEach((d) =>
+      upsert(`d:${d.id}`, d.latitude, d.longitude, "#22c55e", "🛵")
+    );
+    users.forEach((u) =>
+      upsert(
+        `u:${u.user?.id || u.order?.id || u.id}`,
+        u.latitude,
+        u.longitude,
+        "#a855f7",
+        "👤",
+        () => onSelectUser?.(u)
+      )
+    );
+    deliveries.forEach((o) =>
+      upsert(`o:${o.id}`, o.latitude, o.longitude, "#3b82f6", "📦", () => onSelectDelivery?.(o))
+    );
+
+    Object.keys(markersRef.current).forEach((k) => {
+      if (!seen.has(k)) {
+        markersRef.current[k].marker.remove();
+        delete markersRef.current[k];
+      }
     });
 
-    drivers.forEach((d) => {
-      if (d.latitude == null || d.longitude == null) return;
-      const m = new mapboxgl.Marker(makeMarker("#22c55e", "🛵"))
-        .setLngLat([d.longitude, d.latitude])
-        .addTo(map);
-      markersRef.current.push(m);
-      points.push([d.longitude, d.latitude]);
-    });
-
-    users.forEach((u) => {
-      if (u.latitude == null || u.longitude == null) return;
-      const m = new mapboxgl.Marker(makeMarker("#a855f7", "👤", () => onSelectUser?.(u)))
-        .setLngLat([u.longitude, u.latitude])
-        .addTo(map);
-      markersRef.current.push(m);
-      points.push([u.longitude, u.latitude]);
-    });
-
-    deliveries.forEach((o) => {
-      if (o.latitude == null || o.longitude == null) return;
-      const m = new mapboxgl.Marker(makeMarker("#3b82f6", "📦", () => onSelectDelivery?.(o)))
-        .setLngLat([o.longitude, o.latitude])
-        .addTo(map);
-      markersRef.current.push(m);
-      points.push([o.longitude, o.latitude]);
-    });
-
-    if (points.length && !fitRef.current) {
-      const bounds = new mapboxgl.LngLatBounds();
-      points.forEach((p) => bounds.extend(p));
-      map.fitBounds(bounds, { padding: 60, maxZoom: 12 });
-      fitRef.current = true;
+    if (!fitRef.current) {
+      const points = [
+        ...restaurants,
+        ...drivers,
+        ...users,
+        ...deliveries,
+      ]
+        .filter((p) => p.latitude != null && p.longitude != null)
+        .map((p) => [p.longitude, p.latitude]);
+      if (points.length) {
+        const bounds = new mapboxgl.LngLatBounds();
+        points.forEach((p) => bounds.extend(p));
+        map.fitBounds(bounds, { padding: 60, maxZoom: 12 });
+        fitRef.current = true;
+      }
     }
   }, [restaurants, drivers, users, deliveries, onSelectRestaurant, onSelectUser, onSelectDelivery]);
 
