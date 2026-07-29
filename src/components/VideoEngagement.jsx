@@ -117,7 +117,17 @@ export default function VideoEngagement({ item, active, onAdd }) {
     }
   };
 
-  const share = () => setShowShare(true);
+  const share = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (e) {
+        if (e?.name !== "AbortError") setShowShare(true);
+      }
+    } else {
+      setShowShare(true);
+    }
+  };
 
   const submit = async () => {
     if (!user || !text.trim() || posting) return;
