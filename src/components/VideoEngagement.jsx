@@ -81,16 +81,19 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
       try {
         await navigator.share({ title, text: item.description || title, url });
         return;
-      } catch {
-        /* user cancelled — stop here */
-        return;
+      } catch (e) {
+        // AbortError = user dismissed the sheet — stop quietly
+        if (e && e.name === "AbortError") return;
+        // otherwise fall through to clipboard fallback
       }
     }
     // 2) Async clipboard API
     try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copied — paste anywhere to share");
-      return;
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied — paste anywhere to share");
+        return;
+      }
     } catch {
       /* fall through to legacy copy */
     }
