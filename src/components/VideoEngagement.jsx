@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageCircle, Send, X, Plus, Loader2, Share2 } from "lucide-react";
+import { Heart, MessageCircle, Send, X, Plus, Loader2, Share2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "react-hot-toast";
@@ -9,7 +9,6 @@ export default function VideoEngagement({ item, active, onAdd }) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [saved, setSaved] = useState(false);
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [text, setText] = useState("");
@@ -21,15 +20,13 @@ export default function VideoEngagement({ item, active, onAdd }) {
     let cancelled = false;
     (async () => {
       try {
-        const [likes, saves, cmts] = await Promise.all([
+        const [likes, cmts] = await Promise.all([
           base44.entities.Like.filter({ menu_item_id: item.id }, "-created_date", 500),
-          base44.entities.Saved.filter({ menu_item_id: item.id, created_by_id: user.id }, "-created_date", 5),
           base44.entities.Comment.filter({ menu_item_id: item.id }, "-created_date", 50),
         ]);
         if (cancelled) return;
         setLikeCount(likes.length);
         setLiked(likes.some((l) => l.created_by_id === user.id));
-        setSaved(saves.length > 0);
         setComments(cmts);
       } catch {
         /* ignore */
@@ -64,34 +61,6 @@ export default function VideoEngagement({ item, active, onAdd }) {
         });
         setLiked(true);
         setLikeCount((c) => c + 1);
-      }
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const toggleSave = async () => {
-    if (!user) return;
-    try {
-      if (saved) {
-        const mine = await base44.entities.Saved.filter(
-          { menu_item_id: item.id, created_by_id: user.id },
-          "-created_date",
-          1
-        );
-        if (mine[0]) await base44.entities.Saved.delete(mine[0].id);
-        setSaved(false);
-      } else {
-        await base44.entities.Saved.create({
-          menu_item_id: item.id,
-          menu_item_name: item.name,
-          video_url: item.video_url,
-          thumbnail_url: item.thumbnail_url,
-          restaurant_id: item.restaurant_id,
-          restaurant_name: item.restaurant_name,
-          price: item.price,
-        });
-        setSaved(true);
       }
     } catch {
       /* ignore */
@@ -163,12 +132,7 @@ export default function VideoEngagement({ item, active, onAdd }) {
           </span>
           <span className="text-white text-xs font-medium">{comments.length}</span>
         </button>
-        <button onClick={toggleSave} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
-          <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
-            <Bookmark className={cn("w-6 h-6", saved ? "fill-primary text-primary" : "text-white")} />
-          </span>
-          <span className="text-white text-xs font-medium">{saved ? "Saved" : "Save"}</span>
-        </button>
+
         <button onClick={share} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
           <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
             <Share2 className="w-6 h-6 text-white" />
