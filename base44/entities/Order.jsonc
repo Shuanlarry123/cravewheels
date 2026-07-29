@@ -112,6 +112,27 @@
     },
     "customer_phone": {
       "type": "string"
+    },
+    "pickup_code": {
+      "type": "string"
+    },
+    "delivery_pin": {
+      "type": "string"
+    },
+    "pickup_confirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "pickup_confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_proof_url": {
+      "type": "string"
+    },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

@@ -12,6 +12,10 @@ import StepsList from "@/components/driver/StepsList";
 import OpenInMaps from "@/components/driver/OpenInMaps";
 import CollapsibleSheet from "@/components/driver/CollapsibleSheet";
 import MapboxMap from "@/components/MapboxMap";
+import { buildStops } from "@/lib/routeOptimizer";
+import StopList from "@/components/driver/StopList";
+import PickupProof from "@/components/driver/PickupProof";
+import DeliveryProof from "@/components/driver/DeliveryProof";
 import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
@@ -28,6 +32,7 @@ export default function DriverDashboard() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [showSteps, setShowSteps] = useState(false);
   const [sheetView, setSheetView] = useState("orders");
+  const [proof, setProof] = useState(null);
   const mapRef = useRef(null);
 
   const loadProfile = useCallback(async (u) => {
@@ -39,9 +44,9 @@ export default function DriverDashboard() {
 
   const loadOrders = useCallback(async (u) => {
     const all = await base44.entities.Order.filter({});
-    const mine = all.find((o) => o.driver_id === u.id && ["confirmed", "preparing", "picked_up"].includes(o.status));
+    const mine = all.filter((o) => o.driver_id === u.id && ["confirmed", "preparing", "picked_up"].includes(o.status));
     const available = all.filter((o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status));
-    setOrders(mine ? [mine, ...available] : available);
+    setOrders([...mine, ...available]);
 
     const restIds = [...new Set(all.map((o) => o.restaurant_id).filter(Boolean))];
     if (restIds.length) {
@@ -142,7 +147,14 @@ export default function DriverDashboard() {
     }
     setBusy(true);
     try {
-      await base44.entities.Order.update(order.id, { driver_id: user.id, status: "preparing" });
+      const pickup_code = String(Math.floor(1000 + Math.random() * 9000));
+      const delivery_pin = String(Math.floor(1000 + Math.random() * 9000));
+      await base44.entities.Order.update(order.id, {
+        driver_id: user.id,
+        status: "preparing",
+        pickup_code,
+        delivery_pin,
+      });
       toast.success("Delivery accepted");
       await loadOrders(user);
     } catch {
@@ -152,23 +164,40 @@ export default function DriverDashboard() {
     }
   };
 
-  const markPickedUp = async (order) => {
+  const confirmPickup = async (order, code) => {
+    if (code !== order.pickup_code) {
+      toast.error("Incorrect pickup code");
+      return;
+    }
     setBusy(true);
     try {
       await base44.functions.invoke("notifyOrderStatus", { order_id: order.id, status: "picked_up" });
-      toast.success("Marked as picked up");
+      await base44.entities.Order.update(order.id, {
+        pickup_confirmed: true,
+        pickup_confirmed_at: new Date().toISOString(),
+      });
+      toast.success("Pickup confirmed");
+      setProof(null);
       await loadOrders(user);
     } catch {
-      toast.error("Failed to update order");
+      toast.error("Failed to confirm pickup");
     } finally {
       setBusy(false);
     }
   };
 
-  const markDelivered = async (order) => {
+  const confirmDelivery = async (order, pin, photoUrl) => {
+    if (pin !== order.delivery_pin) {
+      toast.error("Incorrect delivery PIN");
+      return;
+    }
     setBusy(true);
     try {
       await base44.functions.invoke("notifyOrderStatus", { order_id: order.id, status: "delivered" });
+      await base44.entities.Order.update(order.id, {
+        delivery_proof_url: photoUrl || null,
+        delivered_at: new Date().toISOString(),
+      });
       await base44.entities.DriverProfile.update(profile.id, {
         total_deliveries: (profile.total_deliveries || 0) + 1,
         total_earnings: (profile.total_earnings || 0) + (order.delivery_fee || 2.99),
@@ -181,6 +210,7 @@ export default function DriverDashboard() {
       toast.success("Delivery complete!");
       setRouteInfo(null);
       setShowSteps(false);
+      setProof(null);
       await loadOrders(user);
     } catch {
       toast.error("Failed to complete delivery");
@@ -205,9 +235,14 @@ export default function DriverDashboard() {
     );
   }
 
-  const myOrder = orders.find(
+  const activeOrders = orders.filter(
     (o) => o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
   );
+  const inDelivery = activeOrders.length > 0;
+  const stops = location ? buildStops(location.lat, location.lng, activeOrders, restaurants) : [];
+  const currentStop = stops[0] || null;
+  const currentRestaurant = currentStop ? restaurants[currentStop.order.restaurant_id] : null;
+
   const NEARBY_MI = 15;
   const rawAvailable = orders.filter((o) => !o.driver_id && ["confirmed", "preparing"].includes(o.status));
   const available = rawAvailable
@@ -222,10 +257,6 @@ export default function DriverDashboard() {
     .filter((e) => e.inArea)
     .sort((a, b) => (a.mi == null ? 1 : b.mi == null ? -1 : a.mi - b.mi))
     .map((e) => e.order);
-  const myRestaurant = myOrder ? restaurants[myOrder.restaurant_id] : null;
-  const pickedUp = myOrder?.status === "picked_up";
-  const destLng = myOrder ? (pickedUp ? myOrder.longitude : myRestaurant?.longitude) : undefined;
-  const destLat = myOrder ? (pickedUp ? myOrder.latitude : myRestaurant?.latitude) : undefined;
 
   return (
     <DriverLayout>
@@ -238,10 +269,9 @@ export default function DriverDashboard() {
               token={token}
               driverLng={location?.lng}
               driverLat={location?.lat}
-              destLng={destLng}
-              destLat={destLat}
+              stops={stops}
               onRouteInfo={setRouteInfo}
-              follow={!!myOrder}
+              follow={inDelivery}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -260,23 +290,28 @@ export default function DriverDashboard() {
         {/* Top floating stats + directions banner */}
         <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/85 to-transparent pb-8 space-y-2">
           <DriverStats statsOnly profile={profile} />
-          {myOrder && destLng != null && <DirectionsBanner routeInfo={routeInfo} />}
+          {inDelivery && stops.length > 0 && <DirectionsBanner routeInfo={routeInfo} />}
         </div>
 
         {/* Collapsible bottom sheet — drag the handle down to reveal the full map */}
         <CollapsibleSheet defaultSnap={1}>
-          {myOrder ? (
+          {inDelivery ? (
             <>
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                Active Delivery
+                Route · {stops.length} stop{stops.length !== 1 ? "s" : ""}
               </h2>
-              <ActiveDeliveryCard
-                order={myOrder}
-                restaurant={myRestaurant}
-                onPickup={() => markPickedUp(myOrder)}
-                onDeliver={() => markDelivered(myOrder)}
-                busy={busy}
-              />
+              <StopList stops={stops} activeIndex={0} restaurants={restaurants} />
+              {currentStop && (
+                <div className="mt-3">
+                  <ActiveDeliveryCard
+                    order={currentStop.order}
+                    restaurant={currentRestaurant}
+                    onPickup={() => setProof({ type: "pickup", order: currentStop.order })}
+                    onDeliver={() => setProof({ type: "dropoff", order: currentStop.order })}
+                    busy={busy}
+                  />
+                </div>
+              )}
               {routeInfo?.steps?.length > 0 && (
                 <>
                   <button
@@ -292,7 +327,11 @@ export default function DriverDashboard() {
                       <StepsList steps={routeInfo.steps} />
                     </div>
                   )}
-                  <OpenInMaps lat={destLat} lng={destLng} label={pickedUp ? "customer" : "restaurant"} />
+                  <OpenInMaps
+                    lat={currentStop?.lat}
+                    lng={currentStop?.lng}
+                    label={currentStop?.type === "pickup" ? "restaurant" : "customer"}
+                  />
                 </>
               )}
             </>
@@ -331,6 +370,13 @@ export default function DriverDashboard() {
             </>
           )}
         </CollapsibleSheet>
+
+        {proof?.type === "pickup" && (
+          <PickupProof order={proof.order} onClose={() => setProof(null)} onConfirm={confirmPickup} busy={busy} />
+        )}
+        {proof?.type === "dropoff" && (
+          <DeliveryProof order={proof.order} onClose={() => setProof(null)} onConfirm={confirmDelivery} busy={busy} />
+        )}
       </div>
     </DriverLayout>
   );
