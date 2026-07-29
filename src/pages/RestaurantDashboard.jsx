@@ -16,6 +16,7 @@ import RestaurantProfileForm from "@/components/restaurant/RestaurantProfileForm
 import MenuItemForm from "@/components/restaurant/MenuItemForm";
 import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
 import RestaurantStats from "@/components/restaurant/RestaurantStats";
+import RestaurantWeeklyPerformance from "@/components/restaurant/RestaurantWeeklyPerformance";
 import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import RestaurantSpecials from "@/components/restaurant/RestaurantSpecials";
 import StripeVirtualCard from "@/components/stripe/StripeVirtualCard";
@@ -161,6 +162,7 @@ export default function RestaurantDashboard() {
                 balanceLabel="Earnings balance (85%)"
                 onIssued={() => window.location.reload()}
               />
+              <RestaurantWeeklyPerformance orders={orders} />
               <RestaurantStats orders={orders} menuCount={menuItems.length} />
               <div>
                 <div className="flex items-center justify-between mb-2">
