@@ -76,44 +76,43 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
   const share = async () => {
     const url = `${window.location.origin}/item/${item.id}`;
     const title = `${item.name} — ${item.restaurant_name || "CraveReel"}`;
-    // 1) Native share sheet (mobile / supported browsers)
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: item.description || title, url });
-        return;
-      } catch (e) {
-        // AbortError = user dismissed the sheet — stop quietly
-        if (e && e.name === "AbortError") return;
-        // otherwise fall through to clipboard fallback
-      }
-    }
-    // 2) Async clipboard API
+    let copied = false;
+
+    // Always copy the link to the clipboard first (works as a standalone convenience
+    // and as a safety net if the native share sheet is unavailable or blocked).
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
-        toast.success("Link copied — paste anywhere to share");
-        return;
+        copied = true;
       }
     } catch {
-      /* fall through to legacy copy */
+      copied = false;
     }
-    // 3) Legacy execCommand fallback (works inside iframes where Clipboard API is blocked)
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = url;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      if (ok) {
-        toast.success("Link copied — paste anywhere to share");
-      } else {
-        toast(`Copy this link:\n${url}`, { duration: 10000 });
+    if (!copied) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        copied = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        copied = false;
       }
-    } catch {
+    }
+    if (copied) toast.success("Link copied — paste anywhere to share");
+
+    // Then open the native share sheet if the browser supports it
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: item.description || title, url });
+      } catch {
+        /* user dismissed — link already copied */
+      }
+    } else if (!copied) {
       toast(`Copy this link:\n${url}`, { duration: 10000 });
     }
   };
