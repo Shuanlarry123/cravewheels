@@ -14,6 +14,12 @@ const BG_STATUS = {
   failed: { label: "BG Failed", cls: "bg-red-500/20 text-red-400" },
   not_started: { label: "No BG", cls: "bg-muted text-muted-foreground" },
 };
+const FACE_STATUS = {
+  matched: { label: "Face Match", cls: "bg-green-500/20 text-green-400" },
+  rejected: { label: "Face Mismatch", cls: "bg-red-500/20 text-red-400" },
+  pending: { label: "Face Pending", cls: "bg-yellow-500/20 text-yellow-400" },
+  not_started: { label: "No Face Check", cls: "bg-muted text-muted-foreground" },
+};
 
 export default function AdminDrivers({ drivers, users, onApprove, onReject, busy }) {
   const [open, setOpen] = useState(null);
@@ -25,6 +31,7 @@ export default function AdminDrivers({ drivers, users, onApprove, onReject, busy
         const u = userById[d.created_by_id];
         const idS = ID_STATUS[d.id_verification_status] || ID_STATUS.not_started;
         const bgS = BG_STATUS[d.background_check_status] || BG_STATUS.not_started;
+        const faceS = FACE_STATUS[d.face_match_status] || FACE_STATUS.not_started;
         const IdIcon = idS.icon;
         const isOpen = open === d.id;
         return (
@@ -50,6 +57,9 @@ export default function AdminDrivers({ drivers, users, onApprove, onReject, busy
                   </span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${bgS.cls}`}>
                     {bgS.label}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${faceS.cls}`}>
+                    {faceS.label}
                   </span>
                 </div>
               </div>

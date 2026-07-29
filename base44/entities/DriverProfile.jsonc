@@ -134,6 +134,19 @@
     "extracted_license_number": {
       "type": "string"
     },
+    "face_match_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "pending",
+        "matched",
+        "rejected"
+      ],
+      "default": "not_started"
+    },
+    "face_match_confidence": {
+      "type": "number"
+    },
     "background_check_status": {
       "type": "string",
       "enum": [

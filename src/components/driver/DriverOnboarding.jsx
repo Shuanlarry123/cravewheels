@@ -87,6 +87,22 @@ export default function DriverOnboarding({ userId, onCreated }) {
         /* admin can re-verify later */
       }
 
+      try {
+        const fm = await base44.functions.invoke("verifyFaceMatch", {
+          selfie_url: data.profile_photo_url,
+          id_photo_url: data.license_front_url,
+        });
+        const f = fm.data?.faceMatch;
+        if (f) {
+          await base44.entities.DriverProfile.update(created.id, {
+            face_match_status: f.is_match ? "matched" : "rejected",
+            face_match_confidence: f.confidence,
+          });
+        }
+      } catch {
+        /* admin can review manually */
+      }
+
       toast.success("Application submitted — pending verification");
       onCreated(created);
     } catch {
