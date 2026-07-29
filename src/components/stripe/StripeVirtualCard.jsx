@@ -10,6 +10,7 @@ import {
   MapPin,
   Phone,
   User,
+  Utensils,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import CardWithdraw from "@/components/stripe/CardWithdraw";
@@ -175,42 +176,57 @@ export default function StripeVirtualCard({
       <span className="text-sm font-bold italic text-white/90 tracking-wide">VISA</span>
     );
 
+  const CraveReelLogo = () => (
+    <div className="flex items-center gap-1.5">
+      <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-md">
+        <Utensils className="w-3 h-3 text-white" />
+      </span>
+      <span className="text-xs font-extrabold text-white tracking-tight">CraveReel</span>
+    </div>
+  );
+
   const front = (
     <div
       style={{ backfaceVisibility: "hidden" }}
-      className="relative rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-900 to-black p-4 h-48 overflow-hidden"
+      className="relative rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black aspect-[1.586] p-3.5 sm:p-4 overflow-hidden flex flex-col justify-between"
     >
-      <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-primary/25 blur-3xl" />
+      <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
       <div className="relative flex items-start justify-between">
-        <div className="flex items-center gap-1.5">
-          <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90" />
-          <span className="text-xs font-bold text-white tracking-tight">CraveReel</span>
-        </div>
+        <CraveReelLogo />
         <BrandMark />
       </div>
-      <div className="relative mt-3 w-9 h-7 rounded-md bg-gradient-to-br from-yellow-200 to-yellow-500" />
-      <p className="relative mt-3 text-white font-mono text-sm sm:text-base tracking-[0.12em] sm:tracking-[0.16em] truncate">
+      <div className="relative flex items-center gap-2">
+        <div className="w-9 h-7 rounded-md bg-gradient-to-br from-yellow-200 to-yellow-600 shadow-inner relative overflow-hidden">
+          <div className="absolute inset-1 grid grid-cols-3 gap-px opacity-50">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span key={i} className="bg-yellow-800/40" />
+            ))}
+          </div>
+        </div>
+        <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90" />
+      </div>
+      <p className="relative text-white font-mono text-sm sm:text-base tracking-[0.14em] sm:tracking-[0.18em]">
         •••• •••• •••• {last4}
       </p>
-      <div className="relative mt-3 flex items-end justify-between gap-2">
+      <div className="relative flex items-end justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[8px] uppercase text-white/50">Cardholder</p>
+          <p className="text-[8px] uppercase tracking-wider text-white/50">Cardholder</p>
           <p className="text-xs font-semibold text-white uppercase tracking-wide truncate">{holder}</p>
+          <span className="inline-flex items-center gap-0.5 mt-0.5">
+            <ShieldCheck className="w-3 h-3 text-green-400" />
+            <span className="text-[9px] text-white/60">active</span>
+          </span>
         </div>
         <div className="text-right shrink-0">
           {expMonth && (
-            <p className="text-[8px] uppercase text-white/50">Expires</p>
-          )}
-          {expMonth && (
-            <p className="text-xs text-white/80 font-medium">
-              {String(expMonth).padStart(2, "0")}/{String(expYear).slice(-2)}
-            </p>
+            <>
+              <p className="text-[8px] uppercase tracking-wider text-white/50">Expires</p>
+              <p className="text-xs text-white/80 font-medium">
+                {String(expMonth).padStart(2, "0")}/{String(expYear).slice(-2)}
+              </p>
+            </>
           )}
         </div>
-      </div>
-      <div className="relative mt-2 flex items-center gap-1">
-        <ShieldCheck className="w-3 h-3 text-green-400" />
-        <span className="text-[9px] text-white/60">active</span>
       </div>
     </div>
   );
@@ -218,16 +234,16 @@ export default function StripeVirtualCard({
   const back = (
     <div
       style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-      className="absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-900 to-black p-4 overflow-hidden"
+      className="absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black p-3.5 sm:p-4 overflow-hidden flex flex-col gap-2"
     >
-      <div className="h-7 w-full bg-black rounded" />
-      <div className="mt-3 flex items-center gap-2">
+      <div className="-mx-3.5 sm:-mx-4 h-7 bg-black" />
+      <div className="flex items-center gap-2">
         <div className="flex-1 h-7 rounded bg-white/80" />
-        <div className="w-14 h-7 rounded bg-white/10 border border-white/20 flex items-center justify-center">
+        <div className="w-16 h-7 rounded bg-white/10 border border-white/20 flex items-center justify-center">
           <span className="text-white/80 font-mono text-xs">•••</span>
         </div>
       </div>
-      <div className="mt-3 text-white/70 text-[9px] leading-snug space-y-0.5">
+      <div className="text-white/70 text-[9px] leading-snug space-y-0.5 mt-auto">
         <p className="text-white font-semibold text-[10px]">CraveReel</p>
         <p className="flex items-center gap-1 truncate">
           <User className="w-2.5 h-2.5 shrink-0" /> {holder}
