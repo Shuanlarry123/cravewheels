@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { useAdminRole } from "@/lib/useAdminRole";
 import { Image } from "@/components/ui/image";
 import {
   Camera,
@@ -47,6 +48,7 @@ function Thumb({ item }) {
 
 function ProfileInner() {
   const { user } = useAuth();
+  const isAdmin = useAdminRole();
   const [profile, setProfile] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
   const [saved, setSaved] = useState([]);
@@ -315,7 +317,7 @@ function ProfileInner() {
 
         {/* Footer links */}
         <div className="mt-8 space-y-2">
-          {user?.role === "admin" && (
+          {isAdmin && (
             <Link to="/admin-dashboard" className="flex items-center gap-3 bg-primary/15 border border-primary/30 rounded-2xl p-3.5 active:scale-[0.99] transition-transform">
               <Shield className="w-5 h-5 text-primary" />
               <span className="flex-1 font-medium text-sm">Admin Dashboard</span>

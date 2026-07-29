@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Search, ShoppingBag, Receipt, User, Settings, Info, ShieldCheck, MoreHorizontal, X, LogOut } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { useAuth } from "@/lib/AuthContext";
+import { useAdminRole } from "@/lib/useAdminRole";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -21,9 +21,8 @@ const MORE = [
 
 export default function CustomerLayout({ children }) {
   const location = useLocation();
-  const { user } = useAuth();
+  const isAdmin = useAdminRole();
   const [moreOpen, setMoreOpen] = useState(false);
-  const isAdmin = user?.role === "admin";
   const moreActive =
     MORE.some((m) => location.pathname === m.to) ||
     (isAdmin && location.pathname === "/admin-dashboard") ||

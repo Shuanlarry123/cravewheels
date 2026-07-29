@@ -16,6 +16,7 @@ import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
 import { Switch } from "@/components/ui/switch";
 import { useLiteMode } from "@/lib/liteMode";
+import { useAdminRole } from "@/lib/useAdminRole";
 
 function Row({ to, icon: Icon, title, desc }) {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ function SettingsInner() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [lite, setLite] = useLiteMode();
+  const isAdmin = useAdminRole();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -94,7 +96,7 @@ function SettingsInner() {
           <Row to="/apply/influencer" icon={Sparkles} title="Apply as Influencer" desc="Share dishes and earn commission per order." />
         </div>
 
-        {user.role === "admin" && (
+        {isAdmin && (
           <button
             onClick={() => navigate("/admin-dashboard")}
             className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-4 active:scale-[0.99] transition-transform text-left"
