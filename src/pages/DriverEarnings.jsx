@@ -55,6 +55,16 @@ export default function DriverEarnings() {
   const deliveries = profile?.total_deliveries || orders.length;
   const avg = deliveries ? total / deliveries : 0;
 
+  const reload = async () => {
+    try {
+      const u = await base44.auth.me();
+      const profs = await base44.entities.DriverProfile.filter({});
+      setProfile(profs.find((p) => p.created_by_id === u.id) || null);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <DriverLayout>
       <div className="px-4 pt-8 pb-28 min-h-screen">
@@ -65,7 +75,7 @@ export default function DriverEarnings() {
         <p className="text-sm text-muted-foreground mb-6">Track what you earn on the road.</p>
 
         {/* Virtual card */}
-        <StripeVirtualCard role="driver" record={profile} balance={total} balanceLabel="Earnings balance" onIssued={() => window.location.reload()} />
+        <StripeVirtualCard role="driver" record={profile} balance={total} balanceLabel="Earnings balance" onIssued={reload} />
 
         {/* Hero balance */}
         <div className="rounded-3xl bg-gradient-to-br from-primary to-orange-500 p-5 text-white mb-6">

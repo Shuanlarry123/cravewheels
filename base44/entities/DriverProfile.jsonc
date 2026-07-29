@@ -168,6 +168,43 @@
     },
     "stripe_card_brand": {
       "type": "string"
+    },
+    "card_exp_month": {
+      "type": "number"
+    },
+    "card_exp_year": {
+      "type": "number"
+    },
+    "card_request_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "requested",
+        "approved",
+        "rejected"
+      ],
+      "default": "none"
+    },
+    "card_request_name": {
+      "type": "string"
+    },
+    "card_request_phone": {
+      "type": "string"
+    },
+    "card_request_line1": {
+      "type": "string"
+    },
+    "card_request_city": {
+      "type": "string"
+    },
+    "card_request_state": {
+      "type": "string"
+    },
+    "card_request_postal_code": {
+      "type": "string"
+    },
+    "card_request_country": {
+      "type": "string"
     }
   },
   "required": [

@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   DollarSign,
   Layers,
+  CreditCard,
 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminOverview from "@/components/admin/AdminOverview";
@@ -20,6 +21,7 @@ import AdminRestaurants from "@/components/admin/AdminRestaurants";
 import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminInfluencers from "@/components/admin/AdminInfluencers";
 import AdminOrders from "@/components/admin/AdminOrders";
+import AdminCardRequests from "@/components/admin/AdminCardRequests";
 import AdminRevenue from "@/components/admin/AdminRevenue";
 import ApprovalQueue from "@/components/admin/ApprovalQueue";
 import { toast } from "react-hot-toast";
@@ -199,6 +201,32 @@ export default function AdminDashboard() {
       setBusy(false);
     }
   };
+  const approveCard = async (id) => {
+    setBusy(true);
+    try {
+      await base44.functions.invoke("manageStripeCard", { action: "approveCard", driver_id: id });
+      toast.success("CraveReel card issued");
+      await load();
+    } catch {
+      toast.error("Failed to issue card");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const rejectCard = async (id) => {
+    setBusy(true);
+    try {
+      await base44.functions.invoke("manageStripeCard", { action: "rejectCard", driver_id: id });
+      toast.success("Card request rejected");
+      await load();
+    } catch {
+      toast.error("Failed to reject request");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cardRequestCount = drivers.filter((d) => d.card_request_status === "requested").length;
 
   const pendingCount =
     restaurants.filter((r) => !r.is_approved).length +
@@ -212,6 +240,7 @@ export default function AdminDashboard() {
     { id: "users", label: "Users", icon: Users },
     { id: "restaurants", label: "Restaurants", icon: Store },
     { id: "drivers", label: "Drivers", icon: Bike },
+    { id: "cards", label: "Card Requests", icon: CreditCard, badge: cardRequestCount || undefined },
     { id: "influencers", label: "Influencers", icon: Sparkles },
     { id: "orders", label: "Orders", icon: ShoppingBag },
     { id: "revenue", label: "Revenue", icon: DollarSign },
@@ -302,6 +331,15 @@ export default function AdminDashboard() {
                   />
                 )}
                 {section === "revenue" && <AdminRevenue orders={orders} restaurants={restaurants} creators={creators} />}
+                {section === "cards" && (
+                  <AdminCardRequests
+                    drivers={drivers}
+                    users={users}
+                    onApprove={approveCard}
+                    onReject={rejectCard}
+                    busy={busy}
+                  />
+                )}
                 {section === "queue" && (
                   <ApprovalQueue
                     restaurants={restaurants}

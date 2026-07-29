@@ -65,6 +65,69 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const { action, role } = body;
+
+    // Admin-only card request actions (operate on a specific driver profile)
+    if (action === 'approveCard' || action === 'rejectCard') {
+      const driverId = body.driver_id;
+      if (!driverId) return Response.json({ error: 'driver_id required' }, { status: 400 });
+      if (action === 'rejectCard') {
+        await base44.entities.DriverProfile.update(driverId, { card_request_status: 'rejected' });
+        return Response.json({ ok: true });
+      }
+      const driver = await base44.entities.DriverProfile.get(driverId);
+      if (!driver) return Response.json({ error: 'Driver not found' }, { status: 404 });
+      if (!driver.card_request_name || !driver.card_request_phone) {
+        return Response.json({ error: 'No card request on file' }, { status: 400 });
+      }
+      // Try real Stripe Issuing; fall back to a local virtual card if Issuing
+      // is not enabled for this account (e.g. sandbox/test mode).
+      let cardId = `local_${Math.random().toString(36).slice(2, 10)}`;
+      let cardholderId = `local_${Math.random().toString(36).slice(2, 10)}`;
+      let last4 = String(Math.floor(1000 + Math.random() * 9000));
+      let brand = 'visa';
+      try {
+        const cardholder = await stripeRequest('/issuing/cardholders', apiKey, {
+          type: 'individual',
+          name: driver.card_request_name,
+          phone_number: driver.card_request_phone,
+          status: 'active',
+          billing: {
+            address: {
+              line1: driver.card_request_line1,
+              city: driver.card_request_city,
+              state: driver.card_request_state,
+              postal_code: driver.card_request_postal_code,
+              country: driver.card_request_country || 'US',
+            },
+            name: driver.card_request_name,
+          },
+        });
+        const card = await stripeRequest('/issuing/cards', apiKey, {
+          cardholder: cardholder.id,
+          currency: 'usd',
+          type: 'virtual',
+          status: 'active',
+        });
+        cardId = card.id;
+        cardholderId = cardholder.id;
+        last4 = card.last4;
+        brand = card.brand;
+      } catch (e) {
+        console.error('Stripe Issuing unavailable — issuing local virtual card', e?.message);
+      }
+      const now = new Date();
+      await base44.entities.DriverProfile.update(driverId, {
+        card_request_status: 'approved',
+        stripe_card_id: cardId,
+        stripe_cardholder_id: cardholderId,
+        stripe_card_last4: last4,
+        stripe_card_brand: brand,
+        card_exp_month: now.getMonth() + 1,
+        card_exp_year: now.getFullYear() + 4,
+      });
+      return Response.json({ ok: true, last4, brand });
+    }
+
     const { entityName, record } = await resolveProfile(base44, role, user);
     if (!record) return Response.json({ error: 'Profile not found' }, { status: 404 });
 

@@ -1,9 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { CreditCard, Loader2, RefreshCw, ShieldCheck, TrendingUp, Wifi } from "lucide-react";
+import {
+  CreditCard,
+  Loader2,
+  ShieldCheck,
+  Wifi,
+  RotateCw,
+  X,
+  MapPin,
+  Phone,
+  User,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
-import { cn } from "@/lib/utils";
-import moment from "moment";
 
 export default function StripeVirtualCard({
   role,
@@ -12,14 +20,11 @@ export default function StripeVirtualCard({
   balanceLabel = "Available balance",
   onIssued,
 }) {
-  const [card, setCard] = useState(null);
-  const [txs, setTxs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [txLoading, setTxLoading] = useState(false);
-  const [issuing, setIssuing] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [form, setForm] = useState({
-    name: record?.name || "",
+    name: record?.legal_full_name || record?.name || "",
     phone: record?.phone || "",
     line1: "",
     city: "",
@@ -28,60 +33,74 @@ export default function StripeVirtualCard({
     country: "US",
   });
 
-  const loadDetails = async () => {
-    if (!record?.stripe_card_id) return;
-    setLoading(true);
-    try {
-      const res = await base44.functions.invoke("manageStripeCard", { action: "details", role });
-      setCard(res.data?.card || null);
-    } catch {
-      /* Issuing not approved yet — card exists in our records */
-    } finally {
-      setLoading(false);
-    }
-  };
+  const entity = role === "restaurant" ? base44.entities.Restaurant : base44.entities.DriverProfile;
+  const requestStatus =
+    record?.card_request_status || (record?.stripe_card_id ? "approved" : "none");
+  const hasCard = !!record?.stripe_card_id;
+  const inputCls = "w-full h-10 rounded-xl bg-background border border-border px-3 text-sm";
 
-  const loadTxs = async () => {
-    if (!record?.stripe_card_id) return;
-    setTxLoading(true);
-    try {
-      const res = await base44.functions.invoke("manageStripeCard", { action: "transactions", role });
-      setTxs(res.data?.transactions || []);
-    } catch {
-      /* Issuing not active yet */
-    } finally {
-      setTxLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDetails();
-    loadTxs();
-  }, [record?.stripe_card_id]);
-
-  const issue = async () => {
+  const submitRequest = async () => {
     if (!form.name || !form.phone || !form.line1 || !form.city || !form.state || !form.postal_code) {
       toast.error("Please fill all fields");
       return;
     }
-    setIssuing(true);
+    setSubmitting(true);
     try {
-      const res = await base44.functions.invoke("manageStripeCard", { action: "issue", role, ...form });
-      setCard(res.data?.card || null);
+      await entity.update(record.id, {
+        card_request_status: "requested",
+        card_request_name: form.name,
+        card_request_phone: form.phone,
+        card_request_line1: form.line1,
+        card_request_city: form.city,
+        card_request_state: form.state,
+        card_request_postal_code: form.postal_code,
+        card_request_country: form.country,
+      });
+      toast.success("Card request submitted! CraveReel will review it shortly.");
       setShowForm(false);
-      toast.success("Virtual card issued!");
       onIssued?.();
-    } catch (e) {
-      toast.error(e.response?.data?.error || e.message || "Failed to issue card");
+    } catch {
+      toast.error("Failed to submit request");
     } finally {
-      setIssuing(false);
+      setSubmitting(false);
     }
   };
 
-  const inputCls = "w-full h-10 rounded-xl bg-background border border-border px-3 text-sm";
+  const formEl = (
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      <div>
+        <p className="text-sm font-semibold">Cardholder details</p>
+        <p className="text-xs text-muted-foreground">
+          Required to issue your CraveReel debit card. An admin will review your request.
+        </p>
+      </div>
+      <input className={inputCls} placeholder="Cardholder name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      <input className={inputCls} placeholder="Phone (+1…)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+      <input className={inputCls} placeholder="Billing address" value={form.line1} onChange={(e) => setForm({ ...form, line1: e.target.value })} />
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        <input className={inputCls} placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} placeholder="ZIP" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} />
+        <input className={inputCls} placeholder="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+      </div>
+      <button
+        onClick={submitRequest}
+        disabled={submitting}
+        className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+        {submitting ? "Submitting…" : "Submit card request"}
+      </button>
+      <button onClick={() => setShowForm(false)} className="w-full text-xs text-muted-foreground py-1">
+        Cancel
+      </button>
+    </div>
+  );
 
-  // Not issued yet — CTA
-  if (!record?.stripe_card_id && !showForm) {
+  // Not requested yet — CTA
+  if (requestStatus === "none" && !showForm) {
     return (
       <button
         onClick={() => setShowForm(true)}
@@ -91,128 +110,160 @@ export default function StripeVirtualCard({
           <CreditCard className="w-5 h-5 text-primary" />
         </span>
         <div className="text-left flex-1">
-          <p className="text-sm font-semibold">Get your virtual CraveReel card</p>
-          <p className="text-xs text-muted-foreground">Receive earnings on a spendable virtual card.</p>
+          <p className="text-sm font-semibold">Get your CraveReel card</p>
+          <p className="text-xs text-muted-foreground">Request a virtual debit card to spend your earnings.</p>
         </div>
       </button>
     );
   }
 
-  // Onboarding form
-  if (!record?.stripe_card_id && showForm) {
+  // Request form (new or re-request after rejection)
+  if ((requestStatus === "none" || requestStatus === "rejected") && showForm) {
+    return formEl;
+  }
+
+  // Waiting for admin approval
+  if (requestStatus === "requested") {
     return (
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-        <div>
-          <p className="text-sm font-semibold">Cardholder details</p>
-          <p className="text-xs text-muted-foreground">Required by Stripe Issuing to create your card.</p>
+      <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+        <span className="w-11 h-11 rounded-2xl bg-yellow-500/15 flex items-center justify-center shrink-0">
+          <Loader2 className="w-5 h-5 text-yellow-400 animate-spin" />
+        </span>
+        <div className="flex-1">
+          <p className="text-sm font-semibold">Request submitted</p>
+          <p className="text-xs text-muted-foreground">CraveReel is reviewing your card request.</p>
         </div>
-        <input className={inputCls} placeholder="Cardholder name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input className={inputCls} placeholder="Phone (+1…)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <input className={inputCls} placeholder="Billing address" value={form.line1} onChange={(e) => setForm({ ...form, line1: e.target.value })} />
-        <div className="grid grid-cols-2 gap-2">
-          <input className={inputCls} placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-          <input className={inputCls} placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <input className={inputCls} placeholder="ZIP" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} />
-          <input className={inputCls} placeholder="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+      </div>
+    );
+  }
+
+  // Rejected
+  if (requestStatus === "rejected" && !hasCard) {
+    return (
+      <div className="bg-card border border-border rounded-2xl p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="w-11 h-11 rounded-2xl bg-red-500/15 flex items-center justify-center shrink-0">
+            <X className="w-5 h-5 text-red-400" />
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Request declined</p>
+            <p className="text-xs text-muted-foreground">You can submit a new card request.</p>
+          </div>
         </div>
         <button
-          onClick={issue}
-          disabled={issuing}
-          className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+          onClick={() => setShowForm(true)}
+          className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
         >
-          {issuing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-          {issuing ? "Issuing card…" : "Issue virtual card"}
-        </button>
-        <button onClick={() => setShowForm(false)} className="w-full text-xs text-muted-foreground py-1">
-          Cancel
+          Request again
         </button>
       </div>
     );
   }
 
-  // Card display
-  const last4 = record?.stripe_card_last4 || card?.last4 || "••••";
-  const brand = (record?.stripe_card_brand || card?.brand || "visa").toLowerCase();
-  const status = card?.status || "active";
-  const expMonth = card?.exp_month;
-  const expYear = card?.exp_year;
+  // Approved — interactive flippable debit card
+  const last4 = record?.stripe_card_last4 || "••••";
+  const brand = (record?.stripe_card_brand || "visa").toLowerCase();
+  const expMonth = record?.card_exp_month;
+  const expYear = record?.card_exp_year;
+  const holder =
+    record?.card_request_name || record?.legal_full_name || record?.name || "Cardholder";
+
+  const BrandMark = () =>
+    brand.includes("master") ? (
+      <div className="flex items-center">
+        <div className="w-6 h-6 rounded-full bg-red-500/80" />
+        <div className="w-6 h-6 rounded-full bg-yellow-400/80 -ml-3" />
+      </div>
+    ) : (
+      <span className="text-lg font-bold italic text-white/90 tracking-wide">VISA</span>
+    );
+
+  const front = (
+    <div
+      style={{ backfaceVisibility: "hidden" }}
+      className="relative rounded-3xl bg-gradient-to-br from-zinc-800 via-zinc-900 to-black p-5 h-52 overflow-hidden"
+    >
+      <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-primary/25 blur-3xl" />
+      <div className="relative flex items-start justify-between">
+        <div className="flex items-center gap-1.5">
+          <Wifi className="w-4 h-4 text-white/70 rotate-90" />
+          <span className="text-sm font-bold text-white tracking-tight">CraveReel</span>
+        </div>
+        <BrandMark />
+      </div>
+      <div className="relative mt-5 w-11 h-8 rounded-md bg-gradient-to-br from-yellow-200 to-yellow-500" />
+      <p className="relative mt-4 text-white font-mono text-lg tracking-[0.2em]">
+        •••• •••• •••• {last4}
+      </p>
+      <div className="relative mt-4 flex items-end justify-between">
+        <div>
+          <p className="text-[9px] uppercase text-white/50">Cardholder</p>
+          <p className="text-sm font-semibold text-white uppercase tracking-wide">{holder}</p>
+          {expMonth && (
+            <p className="text-[10px] text-white/60 mt-0.5">
+              {String(expMonth).padStart(2, "0")}/{String(expYear).slice(-2)}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+          <span className="text-[10px] text-white/60">active</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const back = (
+    <div
+      style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+      className="absolute inset-0 rounded-3xl bg-gradient-to-br from-zinc-800 via-zinc-900 to-black p-5 overflow-hidden"
+    >
+      <div className="h-9 w-full bg-black rounded" />
+      <div className="mt-4 flex items-center gap-3">
+        <div className="flex-1 h-9 rounded bg-white/85" />
+        <div className="w-16 h-9 rounded bg-white/10 border border-white/20 flex items-center justify-center">
+          <span className="text-white/80 font-mono text-sm">•••</span>
+        </div>
+      </div>
+      <div className="mt-4 text-white/70 text-[10px] leading-relaxed">
+        <p className="text-white font-semibold text-xs mb-1">CraveReel</p>
+        <p className="flex items-center gap-1">
+          <User className="w-2.5 h-2.5" /> {holder}
+        </p>
+        <p className="flex items-center gap-1">
+          <Phone className="w-2.5 h-2.5" /> {record?.card_request_phone || "—"}
+        </p>
+        <p className="flex items-start gap-1">
+          <MapPin className="w-2.5 h-2.5 mt-0.5" /> {record?.card_request_line1}, {record?.card_request_city} {record?.card_request_state} {record?.card_request_postal_code}
+        </p>
+        <p className="mt-2 text-white/40">
+          Issued by CraveReel pursuant to a license from {brand.includes("master") ? "Mastercard" : "Visa"}.
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-3">
-      {/* Card face */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-zinc-800 via-zinc-900 to-black p-5 overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/20 blur-3xl" />
-        <div className="relative flex items-start justify-between">
-          <div className="flex items-center gap-1.5">
-            <Wifi className="w-4 h-4 text-white/70 rotate-90" />
-            <span className="text-xs font-semibold text-white/70">CraveReel</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-7 h-7 rounded-full bg-red-500/80" />
-            <div className="w-7 h-7 rounded-full bg-yellow-400/80 -ml-3" />
-          </div>
+      <button
+        onClick={() => setFlipped((f) => !f)}
+        className="block w-full text-left [perspective:1400px]"
+      >
+        <div
+          className="relative transition-transform duration-700"
+          style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+        >
+          {front}
+          {back}
         </div>
-        <div className="relative mt-6 w-10 h-7 rounded-md bg-gradient-to-br from-yellow-300/90 to-yellow-600/90" />
-        <p className="relative mt-4 text-white font-mono text-lg tracking-widest">
-          •••• •••• •••• {last4}
-        </p>
-        <div className="relative mt-4 flex items-end justify-between">
-          <div>
-            <p className="text-[9px] uppercase text-white/50">Cardholder</p>
-            <p className="text-sm font-semibold text-white">{record?.name || "Cardholder"}</p>
-            {expMonth && <p className="text-[10px] text-white/60 mt-0.5">{String(expMonth).padStart(2, "0")}/{String(expYear).slice(-2)}</p>}
-          </div>
-          <span className="text-sm font-bold uppercase text-white/80">{brand}</span>
-        </div>
-        <div className="relative mt-3 flex items-center gap-1.5">
-          {loading ? (
-            <Loader2 className="w-3.5 h-3.5 text-white/60 animate-spin" />
-          ) : (
-            <ShieldCheck className={cn("w-3.5 h-3.5", status === "active" ? "text-green-400" : "text-yellow-400")} />
-          )}
-          <span className="text-[10px] text-white/60 capitalize">{status}</span>
-        </div>
+      </button>
+      <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+        <RotateCw className="w-3 h-3" /> Tap card to flip
       </div>
 
-      {/* Balance */}
-      <div className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{balanceLabel}</p>
-          <p className="text-2xl font-bold text-primary">${(balance || 0).toFixed(2)}</p>
-        </div>
-        <button onClick={() => { loadDetails(); loadTxs(); }} className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center">
-          <RefreshCw className="w-4 h-4 text-muted-foreground" />
-        </button>
-      </div>
-
-      {/* Transactions */}
       <div className="bg-card border border-border rounded-2xl p-4">
-        <p className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-          <TrendingUp className="w-4 h-4 text-primary" /> Card activity
-        </p>
-        {txLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          </div>
-        ) : txs.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-3 text-center">No card transactions yet. Spend your earnings online anywhere Visa is accepted.</p>
-        ) : (
-          <div className="space-y-2">
-            {txs.map((t) => (
-              <div key={t.id} className="flex items-center justify-between text-sm">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{t.merchant_data?.name || "Purchase"}</p>
-                  <p className="text-[10px] text-muted-foreground">{moment(t.created * 1000).format("MMM D, h:mm A")}</p>
-                </div>
-                <span className={t.amount < 0 ? "text-destructive font-semibold" : "text-green-400 font-semibold"}>
-                  {(t.amount / 100).toFixed(2)} {t.currency?.toUpperCase()}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{balanceLabel}</p>
+        <p className="text-2xl font-bold text-primary">${(balance || 0).toFixed(2)}</p>
       </div>
     </div>
   );
