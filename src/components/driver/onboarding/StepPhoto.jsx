@@ -25,7 +25,12 @@ export default function StepPhoto({ data, update, onNext, onBack }) {
         <li>• No sunglasses, hats, or filters</li>
         <li>• Neutral expression, plain background</li>
       </ul>
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!valid} />
+      <NavButtons
+        onBack={onBack}
+        onNext={onNext}
+        nextDisabled={!valid}
+        disabledReason="Upload your profile photo to continue."
+      />
     </div>
   );
 }

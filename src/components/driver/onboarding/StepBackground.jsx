@@ -59,7 +59,13 @@ export default function StepBackground({ data, update, onNext, onBack }) {
         </div>
       </div>
 
-      <NavButtons onBack={onBack} onNext={onNext} nextLabel="Continue to review" nextDisabled={!valid} />
+      <NavButtons
+        onBack={onBack}
+        onNext={onNext}
+        nextLabel="Continue to review"
+        nextDisabled={!valid}
+        disabledReason="Enter the last 4 digits of your SSN and check the consent box."
+      />
     </div>
   );
 }

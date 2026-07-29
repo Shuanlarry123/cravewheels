@@ -62,7 +62,12 @@ export default function StepLicense({ data, update, onNext, onBack }) {
         </p>
       </div>
 
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!valid} />
+      <NavButtons
+        onBack={onBack}
+        onNext={onNext}
+        nextDisabled={!valid}
+        disabledReason="Add your license number, state, expiry date, and a photo of the front."
+      />
     </div>
   );
 }

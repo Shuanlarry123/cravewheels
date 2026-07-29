@@ -77,7 +77,12 @@ export default function StepPersonal({ data, update, onNext, onBack }) {
         </Field>
       </div>
 
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!valid} />
+      <NavButtons
+        onBack={onBack}
+        onNext={onNext}
+        nextDisabled={!valid}
+        disabledReason="Please complete your legal name, date of birth, and address."
+      />
     </div>
   );
 }

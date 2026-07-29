@@ -1,7 +1,16 @@
 import React from "react";
 import { ChevronLeft } from "lucide-react";
+import toast from "react-hot-toast";
 
-export default function NavButtons({ onBack, onNext, nextLabel = "Continue", nextDisabled, hideBack }) {
+export default function NavButtons({ onBack, onNext, nextLabel = "Continue", nextDisabled, disabledReason, hideBack }) {
+  const handleClick = () => {
+    if (nextDisabled) {
+      if (disabledReason) toast.error(disabledReason);
+      return;
+    }
+    onNext();
+  };
+
   return (
     <div className="flex gap-3 mt-6">
       {!hideBack && (
@@ -14,10 +23,11 @@ export default function NavButtons({ onBack, onNext, nextLabel = "Continue", nex
         </button>
       )}
       <button
-        onClick={onNext}
-        disabled={nextDisabled}
+        onClick={handleClick}
         type="button"
-        className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40"
+        className={`flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.99] transition-transform ${
+          nextDisabled ? "opacity-50" : ""
+        }`}
       >
         {nextLabel}
       </button>

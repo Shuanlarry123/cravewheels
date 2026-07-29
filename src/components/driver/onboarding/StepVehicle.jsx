@@ -82,7 +82,12 @@ export default function StepVehicle({ data, update, onNext, onBack }) {
         </div>
       </div>
 
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!valid} />
+      <NavButtons
+        onBack={onBack}
+        onNext={onNext}
+        nextDisabled={!valid}
+        disabledReason="Add your vehicle details and upload the registration & insurance."
+      />
     </div>
   );
 }
