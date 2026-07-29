@@ -39,6 +39,7 @@ export default function OrderTracking() {
   const driverMarker = useRef(null);
   const destMarker = useRef(null);
   const routeSourceRef = useRef(null);
+  const lastRouteAtRef = useRef(0);
 
   useEffect(() => {
     (async () => {
@@ -149,21 +150,19 @@ export default function OrderTracking() {
         destMarker.current.setLngLat([order.longitude, order.latitude]);
       }
     }
-    // draw live route driver -> drop-off
-    if (order?.latitude != null && token) {
+    // draw live route driver -> drop-off (throttled so the marker moves smoothly
+    // without spamming the directions API)
+    if (order?.latitude != null && token && Date.now() - lastRouteAtRef.current >= 10000) {
+      lastRouteAtRef.current = Date.now();
       fetchRoute(token, driver.longitude, driver.latitude, order.longitude, order.latitude).then((coords) => {
-        if (!routeSourceRef.current) return;
-        if (coords?.length) {
-          routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: coords } });
-          const bounds = coords.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(coords[0], coords[0]));
-          bounds.extend([driver.longitude, driver.latitude]);
-          bounds.extend([order.longitude, order.latitude]);
-          map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
-        } else {
-          map.flyTo({ center: [driver.longitude, driver.latitude], zoom: 13 });
-        }
+        if (!routeSourceRef.current || !coords?.length) return;
+        routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: coords } });
+        const bounds = coords.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+        bounds.extend([driver.longitude, driver.latitude]);
+        bounds.extend([order.longitude, order.latitude]);
+        map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
       });
-    } else {
+    } else if (order?.latitude == null) {
       map.flyTo({ center: [driver.longitude, driver.latitude], zoom: 13 });
     }
   }, [driver, order, token]);

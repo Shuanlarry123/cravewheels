@@ -77,19 +77,32 @@ export default function DriverDashboard() {
     return unsub;
   }, []);
 
+  // Real-time GPS tracking — continuous fixes for the driver's own map, with
+  // throttled DB writes so customers see near-real-time movement on tracking.
+  const lastPersistRef = useRef(0);
   useEffect(() => {
     if (!profile) return;
-    const id = setInterval(() => getUserLocation().then(setLocation), 15000);
-    return () => clearInterval(id);
+    if (!navigator.geolocation?.watchPosition) {
+      const id = setInterval(() => getUserLocation().then(setLocation), 10000);
+      return () => clearInterval(id);
+    }
+    const watch = navigator.geolocation.watchPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setLocation(loc);
+        const now = Date.now();
+        if (now - lastPersistRef.current >= 6000) {
+          lastPersistRef.current = now;
+          base44.entities.DriverProfile
+            .update(profile.id, { latitude: loc.lat, longitude: loc.lng })
+            .catch(() => {});
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+    );
+    return () => navigator.geolocation.clearWatch(watch);
   }, [profile?.id]);
-
-  // Persist live GPS to the driver profile so customers can track movement
-  useEffect(() => {
-    if (!profile || !location) return;
-    base44.entities.DriverProfile
-      .update(profile.id, { latitude: location.lat, longitude: location.lng })
-      .catch(() => {});
-  }, [location, profile?.id]);
 
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {
