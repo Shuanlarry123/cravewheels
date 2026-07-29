@@ -12,10 +12,12 @@ import {
   DollarSign,
   Layers,
   CreditCard,
+  Radar,
 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminMapSection from "@/components/admin/AdminMapSection";
+import AdminDispatchMap from "@/components/admin/AdminDispatchMap";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminRestaurants from "@/components/admin/AdminRestaurants";
 import AdminDrivers from "@/components/admin/AdminDrivers";
@@ -237,6 +239,7 @@ export default function AdminDashboard() {
   const sections = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "map", label: "Live Map", icon: Globe },
+    { id: "dispatch", label: "Dispatch", icon: Radar },
     { id: "users", label: "Users", icon: Users },
     { id: "restaurants", label: "Restaurants", icon: Store },
     { id: "drivers", label: "Drivers", icon: Bike },
@@ -286,6 +289,10 @@ export default function AdminDashboard() {
           {section === "map" ? (
             <div className="h-full">
               <AdminMapSection data={data} />
+            </div>
+          ) : section === "dispatch" ? (
+            <div className="h-full">
+              <AdminDispatchMap data={data} />
             </div>
           ) : (
             <main className="h-full overflow-y-auto p-4 md:p-6">
