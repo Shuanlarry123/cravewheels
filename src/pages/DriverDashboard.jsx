@@ -10,6 +10,7 @@ import DriverStatsOverview from "@/components/driver/DriverStatsOverview";
 import DirectionsBanner from "@/components/driver/DirectionsBanner";
 import StepsList from "@/components/driver/StepsList";
 import OpenInMaps from "@/components/driver/OpenInMaps";
+import CollapsibleSheet from "@/components/driver/CollapsibleSheet";
 import MapboxMap from "@/components/MapboxMap";
 import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -188,6 +189,7 @@ export default function DriverDashboard() {
               destLng={destLng}
               destLat={destLat}
               onRouteInfo={setRouteInfo}
+              follow={!!myOrder}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -196,7 +198,7 @@ export default function DriverDashboard() {
           )}
           <button
             onClick={() => mapRef.current?.recenter()}
-            className="absolute right-3 bottom-[58%] z-10 w-10 h-10 rounded-full bg-card/95 backdrop-blur border border-border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+            className="absolute right-3 bottom-28 z-10 w-10 h-10 rounded-full bg-card/95 backdrop-blur border border-border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
             aria-label="Recenter map"
           >
             <LocateFixed className="w-5 h-5 text-primary" />
@@ -209,77 +211,74 @@ export default function DriverDashboard() {
           {myOrder && destLng != null && <DirectionsBanner routeInfo={routeInfo} />}
         </div>
 
-        {/* Bottom sheet with oncoming orders / active delivery */}
-        <div className="absolute bottom-0 inset-x-0 z-10 bg-background rounded-t-3xl border-t border-border max-h-[55%] overflow-y-auto no-scrollbar">
-          <div className="w-10 h-1 rounded-full bg-muted mx-auto mt-2 mb-1" />
-          <div className="p-4 pt-1">
-            {myOrder ? (
-              <>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                  Active Delivery
-                </h2>
-                <ActiveDeliveryCard
-                  order={myOrder}
-                  restaurant={myRestaurant}
-                  onPickup={() => markPickedUp(myOrder)}
-                  onDeliver={() => markDelivered(myOrder)}
-                  busy={busy}
-                />
-                {routeInfo?.steps?.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => setShowSteps((s) => !s)}
-                      className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-primary py-2"
-                    >
-                      <RouteIcon className="w-3.5 h-3.5" />
-                      {showSteps ? "Hide" : "Turn-by-turn"} steps ({routeInfo.steps.length})
-                      {showSteps ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                    {showSteps && (
-                      <div className="mt-1 bg-card border border-border rounded-2xl px-3">
-                        <StepsList steps={routeInfo.steps} />
-                      </div>
-                    )}
-                    <OpenInMaps lat={destLat} lng={destLng} label={pickedUp ? "customer" : "restaurant"} />
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="flex gap-1 bg-card border border-border rounded-xl p-1 mb-3">
+        {/* Collapsible bottom sheet — drag the handle down to reveal the full map */}
+        <CollapsibleSheet defaultSnap={1}>
+          {myOrder ? (
+            <>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                Active Delivery
+              </h2>
+              <ActiveDeliveryCard
+                order={myOrder}
+                restaurant={myRestaurant}
+                onPickup={() => markPickedUp(myOrder)}
+                onDeliver={() => markDelivered(myOrder)}
+                busy={busy}
+              />
+              {routeInfo?.steps?.length > 0 && (
+                <>
                   <button
-                    onClick={() => setSheetView("orders")}
-                    className={cn(
-                      "flex-1 h-9 rounded-lg text-xs font-semibold transition-colors",
-                      sheetView === "orders" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                    )}
+                    onClick={() => setShowSteps((s) => !s)}
+                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-primary py-2"
                   >
-                    Orders {available.length > 0 && `(${available.length})`}
+                    <RouteIcon className="w-3.5 h-3.5" />
+                    {showSteps ? "Hide" : "Turn-by-turn"} steps ({routeInfo.steps.length})
+                    {showSteps ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
-                  <button
-                    onClick={() => setSheetView("stats")}
-                    className={cn(
-                      "flex-1 h-9 rounded-lg text-xs font-semibold transition-colors",
-                      sheetView === "stats" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    My Stats
-                  </button>
-                </div>
-                {sheetView === "stats" ? (
-                  <DriverStatsOverview profile={profile} user={user} />
-                ) : (
-                  <>
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                      Oncoming Orders {available.length > 0 && `(${available.length})`}
-                    </h2>
-                    <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                  {showSteps && (
+                    <div className="mt-1 bg-card border border-border rounded-2xl px-3">
+                      <StepsList steps={routeInfo.steps} />
+                    </div>
+                  )}
+                  <OpenInMaps lat={destLat} lng={destLng} label={pickedUp ? "customer" : "restaurant"} />
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex gap-1 bg-card border border-border rounded-xl p-1 mb-3">
+                <button
+                  onClick={() => setSheetView("orders")}
+                  className={cn(
+                    "flex-1 h-9 rounded-lg text-xs font-semibold transition-colors",
+                    sheetView === "orders" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  Orders {available.length > 0 && `(${available.length})`}
+                </button>
+                <button
+                  onClick={() => setSheetView("stats")}
+                  className={cn(
+                    "flex-1 h-9 rounded-lg text-xs font-semibold transition-colors",
+                    sheetView === "stats" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  My Stats
+                </button>
+              </div>
+              {sheetView === "stats" ? (
+                <DriverStatsOverview profile={profile} user={user} />
+              ) : (
+                <>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                    Oncoming Orders {available.length > 0 && `(${available.length})`}
+                  </h2>
+                  <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
+                </>
+              )}
+            </>
+          )}
+        </CollapsibleSheet>
       </div>
     </DriverLayout>
   );

@@ -21,7 +21,7 @@ async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
 }
 
 const MapboxMap = forwardRef(function MapboxMap(
-  { token, driverLng, driverLat, destLng, destLat, onRouteInfo },
+  { token, driverLng, driverLat, destLng, destLat, onRouteInfo, follow },
   ref
 ) {
   const containerRef = useRef(null);
@@ -62,8 +62,6 @@ const MapboxMap = forwardRef(function MapboxMap(
       "route");
       routeSourceRef.current = map.getSource("route");
     });
-    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
-    map.addControl(new mapboxgl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }), "top-right");
     mapRef.current = map;
     return () => {
       map.remove();
@@ -86,8 +84,13 @@ const MapboxMap = forwardRef(function MapboxMap(
     } else {
       driverMarkerRef.current.setLngLat([driverLng, driverLat]);
     }
-    fitBounds();
-  }, [driverLng, driverLat]);
+    if (follow) {
+      const z = map.getZoom();
+      map.easeTo({ center: [driverLng, driverLat], zoom: z < 15 ? 16 : z, duration: 800 });
+    } else {
+      fitBounds();
+    }
+  }, [driverLng, driverLat, follow]);
 
   // Update destination marker
   useEffect(() => {
@@ -111,8 +114,8 @@ const MapboxMap = forwardRef(function MapboxMap(
     } else {
       destMarkerRef.current.setLngLat([destLng, destLat]);
     }
-    fitBounds();
-  }, [destLng, destLat]);
+    if (!follow) fitBounds();
+  }, [destLng, destLat, follow]);
 
   function fitBounds() {
     const map = mapRef.current;
