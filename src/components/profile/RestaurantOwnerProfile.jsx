@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
-import { Video, Upload, Loader2, CheckCircle2, MapPin, Plus, Utensils, Receipt, ChevronDown } from "lucide-react";
+import { Video, Upload, Loader2, CheckCircle2, Plus, Utensils, Receipt, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
 import MenuItemForm from "@/components/restaurant/MenuItemForm";
 import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
+import AddressEditor from "@/components/restaurant/AddressEditor";
 import { cn } from "@/lib/utils";
 
 export default function RestaurantOwnerProfile({ restaurant }) {
+  const [rest, setRest] = useState(restaurant);
   const [menuItems, setMenuItems] = useState([]);
   const [orders, setOrders] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -94,11 +96,7 @@ export default function RestaurantOwnerProfile({ restaurant }) {
           {restaurant.cuisine_type && (
             <p className="text-xs text-muted-foreground line-clamp-1">{restaurant.cuisine_type}</p>
           )}
-          {restaurant.address && (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 line-clamp-1">
-              <MapPin className="w-3 h-3 shrink-0" /> {restaurant.address}
-            </p>
-          )}
+          <AddressEditor restaurant={rest} onSaved={setRest} />
         </div>
       </div>
 
