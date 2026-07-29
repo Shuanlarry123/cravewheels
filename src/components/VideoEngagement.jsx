@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Send, X, Plus, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { Heart, MessageCircle, Send, X, Plus, Loader2, ShieldCheck, Lock, Share2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useOrderedItems } from "@/lib/useOrderedItems";
@@ -73,6 +73,21 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
     }
   };
 
+  const share = async () => {
+    const url = `${window.location.origin}/item/${item.id}`;
+    const title = `${item.name} — ${item.restaurant_name || "CraveReel"}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: item.description || title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied — paste anywhere to share");
+      }
+    } catch {
+      /* user cancelled share */
+    }
+  };
+
   const submit = async () => {
     if (!user || !text.trim() || posting) return;
     if (!canComment) {
@@ -126,7 +141,12 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
           </span>
           <span className="text-white text-xs font-medium">{comments.length.toLocaleString()}</span>
         </button>
-
+        <button onClick={share} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
+          <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
+            <Share2 className="w-6 h-6 text-white" />
+          </span>
+          <span className="text-white text-xs font-medium">Share</span>
+        </button>
       </div>
 
       {showComments && (
