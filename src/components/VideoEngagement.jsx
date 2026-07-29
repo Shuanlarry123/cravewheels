@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useOrderedItems } from "@/lib/useOrderedItems";
 import StarRating from "@/components/comments/StarRating";
 import VerifiedComment from "@/components/comments/VerifiedComment";
+import TriedItButton from "@/components/comments/TriedItButton";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -188,6 +189,8 @@ export default function VideoEngagement({ item, active, onAdd }) {
           </span>
           <span className="text-white text-xs font-medium">{comments.length}</span>
         </button>
+
+        <TriedItButton itemId={item.id} itemName={item.name} restaurantId={item.restaurant_id} />
 
         <button onClick={share} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
           <span className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">

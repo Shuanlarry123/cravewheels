@@ -1,0 +1,31 @@
+{
+  "name": "TriedIt",
+  "type": "object",
+  "properties": {
+    "menu_item_id": {
+      "type": "string"
+    },
+    "menu_item_name": {
+      "type": "string"
+    },
+    "restaurant_id": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "reaction": {
+      "type": "string",
+      "enum": [
+        "loved",
+        "good",
+        "average",
+        "not_worth"
+      ]
+    }
+  },
+  "required": [
+    "menu_item_id",
+    "reaction"
+  ]
+}

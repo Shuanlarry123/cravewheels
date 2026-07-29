@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 import { useOrderedItems } from "@/lib/useOrderedItems";
 import StarRating from "@/components/comments/StarRating";
 import VerifiedComment from "@/components/comments/VerifiedComment";
+import TriedItButton from "@/components/comments/TriedItButton";
 
 export default function CommentSection({ itemId, itemName, restaurantId }) {
   const { user } = useAuth();
@@ -70,6 +71,8 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
           Verified comments {comments.length > 0 && `(${comments.length})`}
         </h2>
       </div>
+
+      <TriedItButton itemId={itemId} itemName={itemName} restaurantId={restaurantId} />
 
       {canComment ? (
         <div className="mb-4 space-y-2">
