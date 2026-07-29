@@ -16,8 +16,9 @@ import { buildStops } from "@/lib/routeOptimizer";
 import StopList from "@/components/driver/StopList";
 import PickupProof from "@/components/driver/PickupProof";
 import DeliveryProof from "@/components/driver/DeliveryProof";
-import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, LocateFixed } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, LocateFixed, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useVoiceNav } from "@/lib/useVoiceNav";
 import { toast } from "react-hot-toast";
 
 export default function DriverDashboard() {
@@ -33,6 +34,7 @@ export default function DriverDashboard() {
   const [showSteps, setShowSteps] = useState(false);
   const [sheetView, setSheetView] = useState("orders");
   const [proof, setProof] = useState(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const mapRef = useRef(null);
 
   const loadProfile = useCallback(async (u) => {
@@ -219,6 +221,13 @@ export default function DriverDashboard() {
     }
   };
 
+  const activeOrders = orders.filter(
+    (o) => user && o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
+  );
+  const inDelivery = activeOrders.length > 0;
+  useVoiceNav({ routeInfo, enabled: voiceEnabled && inDelivery });
+  const stops = location ? buildStops(location.lat, location.lng, activeOrders, restaurants) : [];
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -235,11 +244,6 @@ export default function DriverDashboard() {
     );
   }
 
-  const activeOrders = orders.filter(
-    (o) => o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
-  );
-  const inDelivery = activeOrders.length > 0;
-  const stops = location ? buildStops(location.lat, location.lng, activeOrders, restaurants) : [];
   const currentStop = stops[0] || null;
   const currentRestaurant = currentStop ? restaurants[currentStop.order.restaurant_id] : null;
 
@@ -284,6 +288,17 @@ export default function DriverDashboard() {
             aria-label="Recenter map"
           >
             <LocateFixed className="w-5 h-5 text-primary" />
+          </button>
+          <button
+            onClick={() => setVoiceEnabled((v) => !v)}
+            className={`absolute right-3 bottom-40 z-10 w-10 h-10 rounded-full backdrop-blur border shadow-lg flex items-center justify-center active:scale-95 transition-transform ${
+              voiceEnabled
+                ? "bg-primary/20 border-primary/40 text-primary"
+                : "bg-card/95 border-border text-muted-foreground"
+            }`}
+            aria-label={voiceEnabled ? "Mute voice navigation" : "Enable voice navigation"}
+          >
+            {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
         </div>
 
