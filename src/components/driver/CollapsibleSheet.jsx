@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 /**
  * A draggable bottom sheet with snap points, like Uber/DoorDash.
@@ -66,9 +67,10 @@ export default function CollapsibleSheet({ snapFracs = [0.06, 0.42, 0.92], defau
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="w-full flex justify-center pt-2.5 pb-1.5 shrink-0 touch-none cursor-grab active:cursor-grabbing"
+        className="w-full flex flex-col items-center justify-center pt-2 pb-1 shrink-0 touch-none cursor-grab active:cursor-grabbing select-none"
       >
-        <div className="w-10 h-1.5 rounded-full bg-muted" />
+        <ChevronDown className="w-4 h-4 text-muted-foreground/70 -mb-0.5" />
+        <div className="w-12 h-1.5 rounded-full bg-muted-foreground/40" />
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pb-4">{children}</div>
     </div>
