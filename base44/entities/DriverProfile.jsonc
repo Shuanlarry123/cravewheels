@@ -41,6 +41,109 @@
     "longitude": {
       "type": "number"
     },
+    "legal_full_name": {
+      "type": "string"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date"
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "license_state": {
+      "type": "string"
+    },
+    "license_expiry": {
+      "type": "string",
+      "format": "date"
+    },
+    "license_front_url": {
+      "type": "string"
+    },
+    "license_back_url": {
+      "type": "string"
+    },
+    "vehicle_make": {
+      "type": "string"
+    },
+    "vehicle_model": {
+      "type": "string"
+    },
+    "vehicle_year": {
+      "type": "number"
+    },
+    "vehicle_color": {
+      "type": "string"
+    },
+    "license_plate": {
+      "type": "string"
+    },
+    "registration_url": {
+      "type": "string"
+    },
+    "insurance_url": {
+      "type": "string"
+    },
+    "profile_photo_url": {
+      "type": "string"
+    },
+    "ssn_last4": {
+      "type": "string"
+    },
+    "background_check_consent": {
+      "type": "boolean"
+    },
+    "consent_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "application_status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected"
+      ],
+      "default": "draft"
+    },
+    "id_verification_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "pending",
+        "verified",
+        "rejected"
+      ],
+      "default": "not_started"
+    },
+    "id_verification_notes": {
+      "type": "string"
+    },
+    "id_verification_confidence": {
+      "type": "number"
+    },
+    "extracted_name": {
+      "type": "string"
+    },
+    "extracted_license_number": {
+      "type": "string"
+    },
+    "background_check_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "pending",
+        "passed",
+        "failed"
+      ],
+      "default": "not_started"
+    },
     "stripe_cardholder_id": {
       "type": "string"
     },

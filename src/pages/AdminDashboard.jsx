@@ -141,8 +141,25 @@ export default function AdminDashboard() {
   const approveDriver = async (id) => {
     setBusy(true);
     try {
-      await base44.entities.DriverProfile.update(id, { is_approved: true });
+      await base44.entities.DriverProfile.update(id, {
+        is_approved: true,
+        application_status: "approved",
+        background_check_status: "passed",
+      });
       toast.success("Driver approved");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const rejectDriver = async (id) => {
+    setBusy(true);
+    try {
+      await base44.entities.DriverProfile.update(id, {
+        application_status: "rejected",
+        is_approved: false,
+      });
+      toast.success("Driver rejected");
       await load();
     } finally {
       setBusy(false);
@@ -257,7 +274,15 @@ export default function AdminDashboard() {
                     busy={busy}
                   />
                 )}
-                {section === "drivers" && <AdminDrivers drivers={drivers} onApprove={approveDriver} busy={busy} />}
+                {section === "drivers" && (
+                  <AdminDrivers
+                    drivers={drivers}
+                    users={users}
+                    onApprove={approveDriver}
+                    onReject={rejectDriver}
+                    busy={busy}
+                  />
+                )}
                 {section === "influencers" && (
                   <AdminInfluencers
                     creators={creators}
