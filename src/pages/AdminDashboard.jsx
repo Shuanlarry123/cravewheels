@@ -308,6 +308,8 @@ export default function AdminDashboard() {
                     drivers={drivers}
                     creators={creators}
                     onApproveRestaurant={approveRestaurant}
+                    onApproveAddress={approveAddressChange}
+                    onRejectAddress={rejectAddressChange}
                     onApproveDriver={approveDriver}
                     onApproveCreator={approveCreator}
                     busy={busy}

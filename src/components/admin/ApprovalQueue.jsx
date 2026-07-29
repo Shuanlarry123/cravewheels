@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Store, Bike, Sparkles, Check, MapPin, Phone } from "lucide-react";
+import { Store, Bike, Sparkles, Check, MapPin, Phone, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "all", label: "All" },
   { id: "restaurant", label: "Restaurants" },
+  { id: "address", label: "Address" },
   { id: "driver", label: "Drivers" },
   { id: "creator", label: "Influencers" },
 ];
@@ -16,6 +17,8 @@ export default function ApprovalQueue({
   onApproveRestaurant,
   onApproveDriver,
   onApproveCreator,
+  onApproveAddress,
+  onRejectAddress,
   busy,
 }) {
   const [filter, setFilter] = useState("all");
@@ -38,6 +41,16 @@ export default function ApprovalQueue({
       lines: [`License: ${d.license_number || "—"}`],
       meta: `Rating ${(d.rating || 5).toFixed(1)}`,
     }));
+  const addrItems = restaurants
+    .filter((r) => r.address_verification_status === "pending" && r.pending_address)
+    .map((r) => ({
+      type: "address",
+      id: r.id,
+      title: r.name,
+      lines: [r.pending_address],
+      meta: `was: ${r.address || "—"}`,
+    }));
+
   const creatorItems = (creators || [])
     .filter((c) => c.status === "pending")
     .map((c) => ({
@@ -48,10 +61,11 @@ export default function ApprovalQueue({
       meta: `${c.follower_count || 0} followers`,
     }));
 
-  const all = [...restItems, ...driverItems, ...creatorItems];
+  const all = [...restItems, ...addrItems, ...driverItems, ...creatorItems];
   const counts = {
     all: all.length,
     restaurant: restItems.length,
+    address: addrItems.length,
     driver: driverItems.length,
     creator: creatorItems.length,
   };
@@ -60,9 +74,13 @@ export default function ApprovalQueue({
   const approve = (item) =>
     item.type === "restaurant"
       ? onApproveRestaurant(item.id)
+      : item.type === "address"
+      ? onApproveAddress(item.id)
       : item.type === "driver"
       ? onApproveDriver(item.id)
       : onApproveCreator(item.id);
+
+  const reject = (item) => (item.type === "address" ? onRejectAddress(item.id) : null);
 
   return (
     <div>
@@ -102,6 +120,8 @@ export default function ApprovalQueue({
               <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
                 {item.type === "restaurant" ? (
                   <Store className="w-5 h-5 text-primary" />
+                ) : item.type === "address" ? (
+                  <MapPin className="w-5 h-5 text-primary" />
                 ) : item.type === "driver" ? (
                   <Bike className="w-5 h-5 text-primary" />
                 ) : (
@@ -121,13 +141,24 @@ export default function ApprovalQueue({
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => approve(item)}
-                disabled={busy}
-                className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1 disabled:opacity-50 shrink-0"
-              >
-                <Check className="w-4 h-4" /> Approve
-              </button>
+              <div className="flex flex-col gap-1 shrink-0">
+                <button
+                  onClick={() => approve(item)}
+                  disabled={busy}
+                  className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+                >
+                  <Check className="w-4 h-4" /> Approve
+                </button>
+                {item.type === "address" && (
+                  <button
+                    onClick={() => reject(item)}
+                    disabled={busy}
+                    className="h-8 px-3 rounded-xl bg-red-500/15 text-red-400 text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" /> Reject
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
