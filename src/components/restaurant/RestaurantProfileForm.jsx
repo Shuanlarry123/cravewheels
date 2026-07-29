@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 export default function RestaurantProfileForm({ restaurant, onSaved }) {
   const [form, setForm] = useState({});
@@ -43,7 +44,14 @@ export default function RestaurantProfileForm({ restaurant, onSaved }) {
           <input value={form.cuisine_type || ""} onChange={(e) => set("cuisine_type", e.target.value)} placeholder="Cuisine" className={inputCls} />
           <input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="Phone" className={inputCls} />
         </div>
-        <input value={form.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="Address" className={inputCls} />
+        <AddressAutocomplete
+          value={form.address || ""}
+          onChange={(v) => set("address", v)}
+          onPick={({ address, lat, lng }) => {
+            setForm((f) => ({ ...f, address, latitude: lat, longitude: lng }));
+          }}
+          placeholder="Start typing your restaurant address..."
+        />
         <input value={form.logo_url || ""} onChange={(e) => set("logo_url", e.target.value)} placeholder="Logo URL" className={inputCls} />
         <input value={form.cover_url || ""} onChange={(e) => set("cover_url", e.target.value)} placeholder="Cover URL" className={inputCls} />
         <div className="grid grid-cols-2 gap-2">
