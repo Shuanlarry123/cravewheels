@@ -59,6 +59,23 @@
     "kitchen_video_url": {
       "type": "string"
     },
+    "pending_address": {
+      "type": "string"
+    },
+    "pending_latitude": {
+      "type": "number"
+    },
+    "pending_longitude": {
+      "type": "number"
+    },
+    "address_verification_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
     "stripe_cardholder_id": {
       "type": "string"
     },

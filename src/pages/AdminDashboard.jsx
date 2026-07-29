@@ -99,6 +99,45 @@ export default function AdminDashboard() {
       setBusy(false);
     }
   };
+  const approveAddressChange = async (id) => {
+    setBusy(true);
+    try {
+      const r = restaurants.find((x) => x.id === id);
+      if (!r) return;
+      await base44.entities.Restaurant.update(id, {
+        address: r.pending_address,
+        latitude: r.pending_latitude,
+        longitude: r.pending_longitude,
+        pending_address: "",
+        pending_latitude: null,
+        pending_longitude: null,
+        address_verification_status: "approved",
+      });
+      toast.success("Address change approved");
+      await load();
+    } catch {
+      toast.error("Failed to approve address");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const rejectAddressChange = async (id) => {
+    setBusy(true);
+    try {
+      await base44.entities.Restaurant.update(id, {
+        pending_address: "",
+        pending_latitude: null,
+        pending_longitude: null,
+        address_verification_status: "rejected",
+      });
+      toast.success("Address change rejected");
+      await load();
+    } catch {
+      toast.error("Failed to reject address");
+    } finally {
+      setBusy(false);
+    }
+  };
   const approveDriver = async (id) => {
     setBusy(true);
     try {
@@ -146,6 +185,7 @@ export default function AdminDashboard() {
 
   const pendingCount =
     restaurants.filter((r) => !r.is_approved).length +
+    restaurants.filter((r) => r.address_verification_status === "pending" && r.pending_address).length +
     drivers.filter((d) => !d.is_approved).length +
     creators.filter((c) => c.status === "pending").length;
 
@@ -208,7 +248,14 @@ export default function AdminDashboard() {
                 {section === "overview" && <AdminOverview data={data} onGo={setSection} />}
                 {section === "users" && <AdminUsers users={users} />}
                 {section === "restaurants" && (
-                  <AdminRestaurants restaurants={restaurants} orders={orders} onApprove={approveRestaurant} busy={busy} />
+                  <AdminRestaurants
+                    restaurants={restaurants}
+                    orders={orders}
+                    onApprove={approveRestaurant}
+                    onApproveAddress={approveAddressChange}
+                    onRejectAddress={rejectAddressChange}
+                    busy={busy}
+                  />
                 )}
                 {section === "drivers" && <AdminDrivers drivers={drivers} onApprove={approveDriver} busy={busy} />}
                 {section === "influencers" && (

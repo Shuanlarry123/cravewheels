@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin, Clock, XCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 export default function RestaurantProfileForm({ restaurant, onSaved }) {
   const [form, setForm] = useState({});
+  const [pendingAddr, setPendingAddr] = useState({ address: "", lat: null, lng: null });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setForm({ ...restaurant });
+    setPendingAddr({ address: "", lat: null, lng: null });
   }, [restaurant]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -22,8 +24,18 @@ export default function RestaurantProfileForm({ restaurant, onSaved }) {
         delivery_fee: Number(form.delivery_fee) || 0,
         delivery_radius_km: Number(form.delivery_radius_km) || 0,
       };
+      if (pendingAddr.address) {
+        data.pending_address = pendingAddr.address;
+        data.pending_latitude = pendingAddr.lat;
+        data.pending_longitude = pendingAddr.lng;
+        data.address_verification_status = "pending";
+      }
       const updated = await base44.entities.Restaurant.update(restaurant.id, data);
-      toast.success("Profile updated");
+      toast.success(
+        pendingAddr.address
+          ? "Profile saved — new address pending admin verification"
+          : "Profile updated"
+      );
       onSaved(updated);
     } catch {
       toast.error("Failed to update profile");
@@ -33,6 +45,7 @@ export default function RestaurantProfileForm({ restaurant, onSaved }) {
   };
 
   const inputCls = "w-full h-11 rounded-xl bg-background border border-border px-3 text-sm";
+  const addrStatus = restaurant.address_verification_status;
 
   return (
     <div className="bg-card border border-border rounded-2xl p-4 mb-6">
@@ -44,14 +57,41 @@ export default function RestaurantProfileForm({ restaurant, onSaved }) {
           <input value={form.cuisine_type || ""} onChange={(e) => set("cuisine_type", e.target.value)} placeholder="Cuisine" className={inputCls} />
           <input value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="Phone" className={inputCls} />
         </div>
-        <AddressAutocomplete
-          value={form.address || ""}
-          onChange={(v) => set("address", v)}
-          onPick={({ address, lat, lng }) => {
-            setForm((f) => ({ ...f, address, latitude: lat, longitude: lng }));
-          }}
-          placeholder="Start typing your restaurant address..."
-        />
+
+        {/* Current (verified) address */}
+        <div>
+          <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Current address</label>
+          <div className="mt-1 w-full h-11 rounded-xl bg-background border border-border px-3 flex items-center gap-2 text-sm">
+            <MapPin className="w-4 h-4 text-primary shrink-0" />
+            <span className="truncate">{restaurant.address || "Not set"}</span>
+          </div>
+          {addrStatus === "pending" && restaurant.pending_address && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-yellow-400 font-medium">
+              <Clock className="w-3 h-3" /> Address change pending admin verification
+            </div>
+          )}
+          {addrStatus === "rejected" && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-red-400 font-medium">
+              <XCircle className="w-3 h-3" /> Last address change was rejected — try again
+            </div>
+          )}
+        </div>
+
+        {/* New address (goes to admin for verification) */}
+        <div>
+          <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Update address (requires admin verification)
+          </label>
+          <div className="mt-1">
+            <AddressAutocomplete
+              value={pendingAddr.address}
+              onChange={(v) => setPendingAddr((p) => ({ ...p, address: v }))}
+              onPick={({ address, lat, lng }) => setPendingAddr({ address, lat, lng })}
+              placeholder="Type new address to request a change..."
+            />
+          </div>
+        </div>
+
         <input value={form.logo_url || ""} onChange={(e) => set("logo_url", e.target.value)} placeholder="Logo URL" className={inputCls} />
         <input value={form.cover_url || ""} onChange={(e) => set("cover_url", e.target.value)} placeholder="Cover URL" className={inputCls} />
         <div className="grid grid-cols-2 gap-2">
