@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import { Bike, Package, Navigation, X, Phone, MapPin, Store, List, Sparkles } from "lucide-react";
+import { Bike, Package, Navigation, X, Phone, MapPin, Store, List, Sparkles, LocateFixed } from "lucide-react";
 
 const ACTIVE = ["confirmed", "preparing", "picked_up"];
 
@@ -277,6 +277,38 @@ export default function AdminDispatchMap({ data }) {
     };
   }, [deliveries, token]);
 
+  const recenter = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (selected) {
+      map.flyTo({ center: [selected.longitude, selected.latitude], zoom: 14, speed: 1.2 });
+      return;
+    }
+    const pts = [
+      ...activeDrivers.map((d) => [d.longitude, d.latitude]),
+      ...deliveries.map((d) => [d.destLng, d.destLat]),
+      ...deliveries.filter((d) => !d.pickedUp).map((d) => [d.restaurant.longitude, d.restaurant.latitude]),
+      ...newOrders.map((o) => {
+        const r = restById[o.restaurant_id];
+        return r ? [r.longitude, r.latitude] : null;
+      }).filter(Boolean),
+    ];
+    if (pts.length === 0) return;
+    if (pts.length === 1) {
+      map.flyTo({ center: pts[0], zoom: 14, speed: 1.2 });
+    } else {
+      const lngs = pts.map((p) => p[0]);
+      const lats = pts.map((p) => p[1]);
+      map.fitBounds(
+        [
+          [Math.min(...lngs), Math.min(...lats)],
+          [Math.max(...lngs), Math.max(...lats)],
+        ],
+        { padding: 80, maxZoom: 15, duration: 800 }
+      );
+    }
+  };
+
   const focusDriver = (id) => {
     const d = activeDrivers.find((x) => x.id === id);
     if (!d) return;
@@ -432,6 +464,15 @@ export default function AdminDispatchMap({ data }) {
           )}
         </div>
       )}
+
+      {/* Recenter button */}
+      <button
+        onClick={recenter}
+        className="absolute right-3 bottom-24 z-20 w-10 h-10 rounded-full bg-card/95 backdrop-blur border border-border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Recenter map"
+      >
+        <LocateFixed className="w-5 h-5 text-primary" />
+      </button>
 
       {/* Legend */}
       <div className="absolute bottom-3 right-3 z-10 bg-card/90 border border-border rounded-xl p-2 space-y-1 text-[11px] pointer-events-none">
