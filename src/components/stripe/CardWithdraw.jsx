@@ -51,9 +51,16 @@ export default function CardWithdraw({ record, balance, onDone }) {
     );
   }
 
+  const maxReceivable = Math.floor(((balance || 0) / 1.02) * 100) / 100;
+
   return (
     <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-      <p className="text-sm font-semibold">Withdraw to your debit card</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">Withdraw to your debit card</p>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-semibold">
+          2% fee
+        </span>
+      </div>
       <div className="flex items-center rounded-xl bg-background border border-border px-3">
         <span className="text-muted-foreground">$</span>
         <input
@@ -66,31 +73,43 @@ export default function CardWithdraw({ record, balance, onDone }) {
           className="flex-1 h-10 bg-transparent outline-none text-sm"
         />
       </div>
-      <div className="text-xs space-y-1">
-        <div className="flex justify-between text-muted-foreground">
-          <span>Amount to card</span>
-          <span>${amt.toFixed(2)}</span>
+
+      {amt > 0 && (
+        <div className="rounded-xl bg-background border border-border p-3 space-y-1.5 text-xs">
+          <div className="flex justify-between text-muted-foreground">
+            <span>You receive on card</span>
+            <span className="font-medium text-foreground">${amt.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-primary">
+            <span>Withdrawal fee (2%)</span>
+            <span className="font-semibold">−${fee.toFixed(2)}</span>
+          </div>
+          <div className="border-t border-border pt-1.5 flex justify-between font-semibold">
+            <span>Total deducted</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="flex justify-between text-muted-foreground">
-          <span>Fee (2%)</span>
-          <span>${fee.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between font-semibold">
-          <span>Total deducted</span>
-          <span>${total.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-muted-foreground">
-          <span>Available</span>
-          <span>${(balance || 0).toFixed(2)}</span>
-        </div>
-      </div>
+      )}
+
+      {amt > 0 && total > (balance || 0) && (
+        <p className="text-xs text-red-400">
+          Insufficient balance. The most you can receive is ${maxReceivable.toFixed(2)}.
+        </p>
+      )}
+
       <button
         onClick={submit}
-        disabled={busy}
-        className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+        disabled={busy || !valid}
+        className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
       >
-        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDownToLine className="w-4 h-4" />}
-        Confirm withdrawal
+        {busy ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <ArrowDownToLine className="w-4 h-4" />
+        )}
+        {amt > 0 && valid
+          ? `Withdraw $${amt.toFixed(2)} · fee $${fee.toFixed(2)}`
+          : "Enter an amount"}
       </button>
       <button onClick={() => setOpen(false)} className="w-full text-xs text-muted-foreground py-1">
         Cancel

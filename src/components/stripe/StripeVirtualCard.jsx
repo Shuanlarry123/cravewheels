@@ -188,7 +188,7 @@ export default function StripeVirtualCard({
   const front = (
     <div
       style={{ backfaceVisibility: "hidden" }}
-      className="relative rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black aspect-[1.586] p-3.5 sm:p-4 overflow-hidden flex flex-col justify-between"
+      className="relative rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black aspect-[1.586] p-3.5 sm:p-4 overflow-hidden flex flex-col justify-between shadow-2xl ring-1 ring-white/10"
     >
       <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
       <div className="relative flex items-start justify-between">
@@ -234,7 +234,7 @@ export default function StripeVirtualCard({
   const back = (
     <div
       style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-      className="absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black p-3.5 sm:p-4 overflow-hidden flex flex-col gap-2"
+      className="absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black p-3.5 sm:p-4 overflow-hidden flex flex-col gap-2 ring-1 ring-white/10"
     >
       <div className="-mx-3.5 sm:-mx-4 h-7 bg-black" />
       <div className="flex items-center gap-2">
@@ -268,7 +268,7 @@ export default function StripeVirtualCard({
     <div className="space-y-3">
       <button
         onClick={() => setFlipped((f) => !f)}
-        className="block w-full text-left [perspective:1400px]"
+        className="block w-full max-w-sm mx-auto text-left [perspective:1400px]"
       >
         <div
           className="relative transition-transform duration-700"
