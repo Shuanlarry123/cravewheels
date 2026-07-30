@@ -99,6 +99,9 @@ export default function OrderTracking() {
       zoom: 12,
     });
     map.on("load", () => {
+      add3DBuildings(map);
+      addSky(map);
+      setWarmLight(map);
       map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } } });
       map.addLayer({
         id: "route-glow",
@@ -122,9 +125,6 @@ export default function OrderTracking() {
         paint: { "line-color": "#FF6B2C", "line-width": 5, "line-opacity": 0.9 },
       });
       routeSourceRef.current = map.getSource("route");
-      add3DBuildings(map);
-      addSky(map);
-      setWarmLight(map);
     });
     map.setPitch(40);
     mapInstance.current = map;

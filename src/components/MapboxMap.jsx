@@ -165,6 +165,10 @@ const MapboxMap = forwardRef(function MapboxMap(
       zoom: 13,
     });
     map.on("load", () => {
+      // 3D buildings + sky + warm light added first so route lines render on top
+      add3DBuildings(map);
+      addSky(map);
+      setWarmLight(map);
       map.addSource("route", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -210,10 +214,6 @@ const MapboxMap = forwardRef(function MapboxMap(
         },
       });
       routeSourceRef.current = map.getSource("route");
-      // 3D buildings + atmospheric sky + warm ambient light
-      add3DBuildings(map);
-      addSky(map);
-      setWarmLight(map);
     });
     mapRef.current = map;
     return () => {
