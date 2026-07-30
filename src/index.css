@@ -70,7 +70,7 @@
     user-select: text;
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overscroll-behavior-y: none; }
   .snap-feed {
     scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
