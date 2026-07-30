@@ -23,27 +23,30 @@ async function fetchRoute(token, coords) {
     if (!route) return null;
     const legs = route.legs || [];
 
-    // Split the full geometry into consecutive segments grouped by congestion
-    // level so a single data-driven line-colour can paint each one.
+    // Build traffic-coloured line features from each leg's step geometries.
+    // Mapbox Directions v5 returns geometry per-step (not per-leg), with
+    // congestion annotations at the leg level.
     const features = [];
     legs.forEach((leg) => {
-      const geom = leg.geometry?.coordinates || [];
       const cong = leg.annotation?.congestion || [];
-      if (geom.length < 2) return;
-      let cur = cong[0] || "unknown";
-      let seg = [geom[0]];
-      for (let i = 0; i < geom.length - 1; i++) {
-        const c = cong[i] || "unknown";
-        if (c === cur) {
-          seg.push(geom[i + 1]);
-        } else {
-          features.push(lineFeature(seg, cur));
-          cur = c;
-          seg = [geom[i], geom[i + 1]];
-        }
-      }
-      if (seg.length > 1) features.push(lineFeature(seg, cur));
+      const steps = leg.steps || [];
+      let congIdx = 0;
+      steps.forEach((step) => {
+        const stepCoords = step.geometry?.coordinates || [];
+        if (stepCoords.length < 2) return;
+        const c = cong[congIdx] || "unknown";
+        features.push(lineFeature(stepCoords, c));
+        congIdx += stepCoords.length - 1;
+      });
     });
+
+    // Fallback: if no step geometries were available, use the full route geometry
+    if (!features.length) {
+      const fullCoords = route.geometry?.coordinates || [];
+      if (fullCoords.length >= 2) {
+        features.push(lineFeature(fullCoords, "unknown"));
+      }
+    }
 
     return {
       features,
@@ -214,6 +217,16 @@ const MapboxMap = forwardRef(function MapboxMap(
         },
       });
       routeSourceRef.current = map.getSource("route");
+
+      // If stops were already provided before the map finished loading,
+      // fetch and draw the route now (the stops effect may have run too early).
+      const cur = stopsRef.current || [];
+      if (cur.length) {
+        fetchAndDraw([
+          [driverLng ?? 0, driverLat ?? 0],
+          ...cur.map((s) => [s.lng, s.lat]),
+        ]);
+      }
     });
     mapRef.current = map;
     return () => {
