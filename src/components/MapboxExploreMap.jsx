@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { add3DBuildings, addSky, setWarmLight } from "@/lib/mapEnhancements";
 
 // Connecticut centroid — used as the default map focus and geolocation fallback.
 const CT_CENTER = { lng: -72.7, lat: 41.5 };
@@ -28,6 +29,9 @@ export default function MapboxExploreMap({ token, restaurants, focusId, onSelect
     });
     map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
     map.on("load", () => {
+      add3DBuildings(map);
+      addSky(map);
+      setWarmLight(map);
       if (!centerOnUser && restaurants.length > 1) fitBounds(map, restaurants);
     });
     mapRef.current = map;

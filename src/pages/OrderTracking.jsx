@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Check, Truck, Store, MessageCircle, Clock, MapPin, Star, Phone } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { add3DBuildings, addSky, setWarmLight, makeTrafficLightEl, makeAnimatedDriverEl } from "@/lib/mapEnhancements";
 import { toast } from "react-hot-toast";
 
 const STEPS = ["pending", "confirmed", "preparing", "picked_up", "delivered"];
@@ -17,10 +18,14 @@ const LABELS = {
 
 async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
   try {
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&access_token=${token}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&overview=full&steps=true&access_token=${token}`;
     const res = await fetch(url);
     const data = await res.json();
-    return data.routes?.[0]?.geometry?.coordinates || null;
+    const route = data.routes?.[0];
+    return {
+      coordinates: route?.geometry?.coordinates || [],
+      steps: route?.legs?.[0]?.steps || [],
+    };
   } catch {
     return null;
   }
@@ -40,6 +45,7 @@ export default function OrderTracking() {
   const destMarker = useRef(null);
   const routeSourceRef = useRef(null);
   const lastRouteAtRef = useRef(0);
+  const trafficMarkersRef = useRef([]);
 
   useEffect(() => {
     (async () => {
@@ -95,11 +101,18 @@ export default function OrderTracking() {
     map.on("load", () => {
       map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: [] } } });
       map.addLayer({
+        id: "route-glow",
+        type: "line",
+        source: "route",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#FF6B2C", "line-width": 20, "line-opacity": 0.22, "line-blur": 6 },
+      });
+      map.addLayer({
         id: "route-casing",
         type: "line",
         source: "route",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.18 },
+        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.5 },
       });
       map.addLayer({
         id: "route",
@@ -109,7 +122,11 @@ export default function OrderTracking() {
         paint: { "line-color": "#FF6B2C", "line-width": 5, "line-opacity": 0.9 },
       });
       routeSourceRef.current = map.getSource("route");
+      add3DBuildings(map);
+      addSky(map);
+      setWarmLight(map);
     });
+    map.setPitch(40);
     mapInstance.current = map;
     return () => {
       map.remove();
@@ -117,6 +134,7 @@ export default function OrderTracking() {
       driverMarker.current = null;
       destMarker.current = null;
       routeSourceRef.current = null;
+      trafficMarkersRef.current = [];
     };
   }, [token]);
 
@@ -136,11 +154,9 @@ export default function OrderTracking() {
     if (driverMarker.current) {
       driverMarker.current.setLngLat([driver.longitude, driver.latitude]);
     } else {
-      const el = document.createElement("div");
-      el.style.fontSize = "22px";
-      el.style.lineHeight = "1";
-      el.textContent = "🛵";
-      driverMarker.current = new mapboxgl.Marker(el).setLngLat([driver.longitude, driver.latitude]).addTo(map);
+      driverMarker.current = new mapboxgl.Marker({ element: makeAnimatedDriverEl() })
+        .setLngLat([driver.longitude, driver.latitude])
+        .addTo(map);
     }
     // destination marker (customer drop-off)
     if (order?.latitude != null) {
@@ -154,10 +170,22 @@ export default function OrderTracking() {
     // without spamming the directions API)
     if (order?.latitude != null && token && Date.now() - lastRouteAtRef.current >= 10000) {
       lastRouteAtRef.current = Date.now();
-      fetchRoute(token, driver.longitude, driver.latitude, order.longitude, order.latitude).then((coords) => {
-        if (!routeSourceRef.current || !coords?.length) return;
-        routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: coords } });
-        const bounds = coords.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+      fetchRoute(token, driver.longitude, driver.latitude, order.longitude, order.latitude).then((res) => {
+        if (!routeSourceRef.current || !res?.coordinates?.length) return;
+        routeSourceRef.current.setData({ type: "Feature", geometry: { type: "LineString", coordinates: res.coordinates } });
+        // Traffic-light markers at major intersections
+        trafficMarkersRef.current.forEach((m) => m.remove());
+        trafficMarkersRef.current = [];
+        (res.steps || []).forEach((step) => {
+          const loc = step.maneuver?.location;
+          const type = step.maneuver?.type;
+          if (!loc || type === "depart" || type === "arrive" || type === "continue") return;
+          const marker = new mapboxgl.Marker({ element: makeTrafficLightEl() })
+            .setLngLat(loc)
+            .addTo(map);
+          trafficMarkersRef.current.push(marker);
+        });
+        const bounds = res.coordinates.reduce((b, p) => b.extend(p), new mapboxgl.LngLatBounds(res.coordinates[0], res.coordinates[0]));
         bounds.extend([driver.longitude, driver.latitude]);
         bounds.extend([order.longitude, order.latitude]);
         map.fitBounds(bounds, { padding: 60, maxZoom: 15 });

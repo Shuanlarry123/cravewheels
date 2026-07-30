@@ -1,6 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { add3DBuildings, addSky, setWarmLight, makeTrafficLightEl } from "@/lib/mapEnhancements";
 
 const REROUTE_THRESHOLD_M = 120;
 const REROUTE_COOLDOWN_MS = 20000;
@@ -141,6 +142,7 @@ const MapboxMap = forwardRef(function MapboxMap(
   const prevPosRef = useRef(null);
   const pulseMarkerRef = useRef(null);
   const stopMarkersRef = useRef([]);
+  const trafficMarkersRef = useRef([]);
   const routeCoordsRef = useRef(null);
   const lastRerouteRef = useRef(0);
   const stopsRef = useRef(stops);
@@ -208,6 +210,10 @@ const MapboxMap = forwardRef(function MapboxMap(
         },
       });
       routeSourceRef.current = map.getSource("route");
+      // 3D buildings + atmospheric sky + warm ambient light
+      add3DBuildings(map);
+      addSky(map);
+      setWarmLight(map);
     });
     mapRef.current = map;
     return () => {
@@ -217,6 +223,7 @@ const MapboxMap = forwardRef(function MapboxMap(
       routeSourceRef.current = null;
       pulseMarkerRef.current = null;
       stopMarkersRef.current = [];
+      trafficMarkersRef.current = [];
     };
   }, [token]);
 
@@ -228,6 +235,20 @@ const MapboxMap = forwardRef(function MapboxMap(
       type: "FeatureCollection",
       features: res?.features || [],
     });
+    // Traffic-light markers at major intersections along the route
+    trafficMarkersRef.current.forEach((m) => m.remove());
+    trafficMarkersRef.current = [];
+    if (res?.steps) {
+      res.steps.forEach((step) => {
+        const loc = step.maneuver?.location;
+        const type = step.maneuver?.type;
+        if (!loc || type === "depart" || type === "arrive" || type === "continue") return;
+        const marker = new mapboxgl.Marker({ element: makeTrafficLightEl() })
+          .setLngLat(loc)
+          .addTo(map);
+        trafficMarkersRef.current.push(marker);
+      });
+    }
     onRouteInfo?.(
       res
         ? {
