@@ -303,7 +303,7 @@ export default function DriverDashboard() {
         </div>
 
         {/* Top floating stats + directions banner */}
-        <div className="absolute top-0 inset-x-0 p-3 z-10 bg-gradient-to-b from-background/85 to-transparent pb-8 space-y-2">
+        <div className="absolute top-0 inset-x-0 pt-[calc(env(safe-area-inset-top)+0.75rem)] px-3 pb-8 z-10 bg-gradient-to-b from-background/85 to-transparent space-y-2">
           <DriverStats statsOnly profile={profile} />
           {inDelivery && stops.length > 0 && <DirectionsBanner routeInfo={routeInfo} />}
         </div>

@@ -8,7 +8,7 @@ export default function AdminSidebar({ sections, active, onSelect, open, onClose
       {open && <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={onClose} />}
       <aside
         className={cn(
-          "fixed md:static z-40 top-0 left-0 h-full w-60 bg-card border-r border-border p-3 flex flex-col transition-transform",
+          "fixed md:static z-40 top-0 left-0 h-full w-60 bg-card border-r border-border pt-[calc(env(safe-area-inset-top)+0.75rem)] px-3 pb-3 flex flex-col transition-transform",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >

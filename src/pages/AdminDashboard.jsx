@@ -275,7 +275,7 @@ export default function AdminDashboard() {
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="md:hidden flex items-center gap-2 p-3 border-b border-border">
+        <div className="md:hidden flex items-center gap-2 pt-[calc(env(safe-area-inset-top)+0.75rem)] px-3 pb-3 border-b border-border">
           <button
             onClick={() => setSidebarOpen(true)}
             className="h-9 w-9 rounded-xl bg-card border border-border flex items-center justify-center"
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <main className="h-full overflow-y-auto p-4 md:p-6">
-              <div className="max-w-5xl mx-auto">
+              <div className="max-w-5xl mx-auto pb-[env(safe-area-inset-bottom)]">
                 <h1 className="text-2xl font-bold mb-4">{activeLabel}</h1>
                 {section === "overview" && <AdminOverview data={data} onGo={setSection} />}
                 {section === "users" && <AdminUsers users={users} />}

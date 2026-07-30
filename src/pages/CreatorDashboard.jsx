@@ -56,8 +56,8 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
-      <div className="mx-auto max-w-md px-4 pt-6">
+    <div className="min-h-screen bg-background text-foreground pb-[calc(env(safe-area-inset-bottom)+6rem)]">
+      <div className="mx-auto max-w-md px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
         <button onClick={() => navigate("/")} className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
           <ChevronLeft className="w-4 h-4" /> Back to feed
         </button>

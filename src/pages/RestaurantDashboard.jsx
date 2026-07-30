@@ -110,8 +110,8 @@ export default function RestaurantDashboard() {
   const recent = orders.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
-      <div className="mx-auto max-w-md px-4 pt-6">
+    <div className="min-h-screen bg-background text-foreground pb-[calc(env(safe-area-inset-bottom)+6rem)]">
+      <div className="mx-auto max-w-md px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
@@ -134,7 +134,7 @@ export default function RestaurantDashboard() {
         )}
 
         {/* Tab bar */}
-        <div className="sticky top-0 z-20 -mx-4 px-4 pb-2 pt-1 bg-background/95 backdrop-blur">
+        <div className="sticky top-[env(safe-area-inset-top)] z-20 -mx-4 px-4 pb-2 pt-1 bg-background/95 backdrop-blur">
           <div className="flex gap-1 bg-card border border-border rounded-2xl p-1">
             {TABS.map((t) => (
               <button
