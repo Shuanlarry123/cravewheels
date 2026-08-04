@@ -35,6 +35,10 @@
     "longitude": {
       "type": "number"
     },
+    "location_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "phone": {
       "type": "string"
     },

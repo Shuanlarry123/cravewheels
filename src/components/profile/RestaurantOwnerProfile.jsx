@@ -7,6 +7,7 @@ import MenuItemForm from "@/components/restaurant/MenuItemForm";
 import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
 import AddressEditor from "@/components/restaurant/AddressEditor";
+import TruckLocationEditor from "@/components/restaurant/TruckLocationEditor";
 import { cn } from "@/lib/utils";
 
 export default function RestaurantOwnerProfile({ restaurant }) {
@@ -96,7 +97,11 @@ export default function RestaurantOwnerProfile({ restaurant }) {
           {restaurant.cuisine_type && (
             <p className="text-xs text-muted-foreground line-clamp-1">{restaurant.cuisine_type}</p>
           )}
-          <AddressEditor restaurant={rest} onSaved={setRest} />
+          {rest.restaurant_type === "food_truck" ? (
+            <TruckLocationEditor restaurant={rest} onSaved={setRest} />
+          ) : (
+            <AddressEditor restaurant={rest} onSaved={setRest} />
+          )}
         </div>
       </div>
 
