@@ -90,6 +90,14 @@ function PrivacyInner() {
           ))}
         </div>
 
+        <button
+          onClick={() => navigate("/legal")}
+          className="w-full flex items-center justify-between bg-card border border-border rounded-2xl p-4 mb-6 active:scale-[0.99] transition-transform"
+        >
+          <span className="text-sm font-medium">Legal</span>
+          <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
+        </button>
+
         <p className="text-xs text-muted-foreground mt-6 leading-relaxed">
           Questions about your data? Contact us through the app and we'll help with access, correction,
           or deletion of your information.

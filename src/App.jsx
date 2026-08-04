@@ -33,6 +33,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Apply from '@/pages/Apply';
 import Privacy from '@/pages/Privacy';
+import Legal from '@/pages/Legal';
 import Earn from '@/pages/Earn';
 import PostDetail from '@/pages/PostDetail';
 // Add page imports here
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/account" element={<Settings />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/legal" element={<Legal />} />
         <Route path="/apply/:type" element={<Apply />} />
         <Route path="/earn/:type" element={<Earn />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
