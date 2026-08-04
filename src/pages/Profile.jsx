@@ -14,6 +14,9 @@ import {
   Pencil,
   ChevronRight,
   PlayCircle,
+  Check,
+  X,
+  Loader2,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import RestaurantOwnerProfile from "@/components/profile/RestaurantOwnerProfile";
@@ -58,6 +61,8 @@ function ProfileInner() {
   const [tab, setTab] = useState("saved");
   const [editing, setEditing] = useState(false);
   const [bioDraft, setBioDraft] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef(null);
 
@@ -131,6 +136,21 @@ function ProfileInner() {
     }
   };
 
+  const saveName = async () => {
+    if (!nameDraft.trim() || saving) return;
+    try {
+      setSaving(true);
+      await base44.auth.updateMe({ full_name: nameDraft.trim() });
+      setProfile((p) => ({ ...p, full_name: nameDraft.trim() }));
+      setEditingName(false);
+      toast.success("Name updated");
+    } catch {
+      toast.error("Failed to update name");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!profile)
     return (
       <CustomerLayout>
@@ -151,45 +171,94 @@ function ProfileInner() {
 
   return (
     <CustomerLayout>
-      <div className="px-4 pt-8 pb-24 min-h-screen">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-full bg-primary/20 overflow-hidden flex items-center justify-center text-2xl font-bold text-primary">
-              {profile.profile_picture ? (
-                <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
-              ) : (
-                (profile.full_name || profile.email || "U")[0].toUpperCase()
-              )}
+      <div className="px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-24 min-h-screen">
+        {/* Profile section */}
+        <div className="bg-card border border-border rounded-2xl p-5 mb-4">
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="w-[72px] h-[72px] rounded-full bg-primary/15 overflow-hidden flex items-center justify-center text-2xl font-bold text-primary">
+                {profile.profile_picture ? (
+                  <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
+                ) : (
+                  (profile.full_name || profile.email || "U")[0].toUpperCase()
+                )}
+              </div>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={saving}
+                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-90 transition-transform disabled:opacity-50"
+                aria-label="Change profile picture"
+              >
+                {saving && !editingName && !editing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPicture} />
             </div>
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={saving}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md"
-            >
-              <Camera className="w-3.5 h-3.5" />
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPicture} />
+
+            <div className="flex-1 min-w-0">
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveName()}
+                    placeholder="Your name"
+                    maxLength={50}
+                    className="flex-1 min-w-0 h-9 rounded-xl bg-background border border-border px-3 text-base font-bold"
+                    autoFocus
+                  />
+                  <button
+                    onClick={saveName}
+                    disabled={saving || !nameDraft.trim()}
+                    className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingName(false);
+                      setNameDraft(profile.full_name || "");
+                    }}
+                    disabled={saving}
+                    className="shrink-0 w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingName(true);
+                    setNameDraft(profile.full_name || "");
+                  }}
+                  className="flex items-center gap-2 active:scale-95 transition-transform"
+                >
+                  <h1 className="text-xl font-bold leading-tight tracking-tight text-left">
+                    {profile.full_name || "Member"}
+                  </h1>
+                  <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
+                </button>
+              )}
+              <p className="text-xs text-muted-foreground mt-1 truncate">{handle}</p>
+            </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-3 text-center">
-            <div>
+          <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-border">
+            <div className="text-center">
               <p className="text-lg font-bold">{saved.length}</p>
               <p className="text-[11px] text-muted-foreground">Saved</p>
             </div>
-            <div>
+            <div className="w-px h-8 bg-border" />
+            <div className="text-center">
               <p className="text-lg font-bold">{liked.length}</p>
               <p className="text-[11px] text-muted-foreground">Liked</p>
             </div>
-            <div>
+            <div className="w-px h-8 bg-border" />
+            <div className="text-center">
               <p className="text-lg font-bold">{orders.length}</p>
               <p className="text-[11px] text-muted-foreground">Orders</p>
             </div>
           </div>
         </div>
-
-        <h1 className="text-lg font-bold">{profile.full_name || "Member"}</h1>
-        <p className="text-sm text-muted-foreground">{handle}</p>
 
         {/* Bio */}
         {editing ? (
