@@ -181,7 +181,6 @@ function AboutInner() {
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </Link>
 
-        <p className="text-center text-xs text-muted-foreground">Made with 🔥 on CraveReel</p>
       </div>
     </CustomerLayout>
   );
