@@ -15,6 +15,7 @@ export default function PostEngagement({ post, active }) {
   const [showComments, setShowComments] = useState(false);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const inputRef = useRef(null);
 
   const followTarget = post.restaurant_id
@@ -58,65 +59,89 @@ export default function PostEngagement({ post, active }) {
   }, [active, user, post.id]);
 
   const toggleLike = async () => {
-    if (!user) return;
+    if (!user || busy) return;
+    setBusy(true);
     try {
+      const q = { post_id: post.id, created_by_id: user.id };
       if (liked) {
-        const mine = await base44.entities.PostLike.filter({ post_id: post.id, created_by_id: user.id }, "-created_date", 1);
-        if (mine[0]) await base44.entities.PostLike.delete(mine[0].id);
+        const mine = await base44.entities.PostLike.filter(q, "-created_date", 100);
+        await Promise.all(mine.map((l) => base44.entities.PostLike.delete(l.id)));
         setLiked(false);
-        setLikeCount((c) => Math.max(0, c - 1));
+        setLikeCount((c) => Math.max(0, c - mine.length));
       } else {
-        await base44.entities.PostLike.create({ post_id: post.id, post_author_name: post.author_name });
-        setLiked(true);
-        setLikeCount((c) => c + 1);
+        const existing = await base44.entities.PostLike.filter(q, "-created_date", 1);
+        if (existing.length) {
+          setLiked(true);
+        } else {
+          await base44.entities.PostLike.create({ post_id: post.id, post_author_name: post.author_name });
+          setLiked(true);
+          setLikeCount((c) => c + 1);
+        }
       }
     } catch {
       /* ignore */
+    } finally {
+      setBusy(false);
     }
   };
 
   const toggleSave = async () => {
-    if (!user) return;
+    if (!user || busy) return;
+    setBusy(true);
     try {
+      const q = { post_id: post.id, created_by_id: user.id };
       if (saved) {
-        const mine = await base44.entities.SavedPost.filter({ post_id: post.id, created_by_id: user.id }, "-created_date", 1);
-        if (mine[0]) await base44.entities.SavedPost.delete(mine[0].id);
+        const mine = await base44.entities.SavedPost.filter(q, "-created_date", 100);
+        await Promise.all(mine.map((s) => base44.entities.SavedPost.delete(s.id)));
         setSaved(false);
       } else {
-        await base44.entities.SavedPost.create({
-          post_id: post.id,
-          caption: post.caption,
-          video_url: post.video_url,
-          thumbnail_url: post.thumbnail_url,
-          author_name: post.author_name,
-          author_type: post.author_type,
-        });
-        setSaved(true);
+        const existing = await base44.entities.SavedPost.filter(q, "-created_date", 1);
+        if (existing.length) {
+          setSaved(true);
+        } else {
+          await base44.entities.SavedPost.create({
+            post_id: post.id,
+            caption: post.caption,
+            video_url: post.video_url,
+            thumbnail_url: post.thumbnail_url,
+            author_name: post.author_name,
+            author_type: post.author_type,
+          });
+          setSaved(true);
+        }
       }
     } catch {
       /* ignore */
+    } finally {
+      setBusy(false);
     }
   };
 
   const toggleFollow = async () => {
-    if (!user || !followTarget) return;
+    if (!user || !followTarget || busy) return;
+    setBusy(true);
     try {
+      const q = post.restaurant_id
+        ? { restaurant_id: post.restaurant_id, created_by_id: user.id }
+        : { creator_id: post.author_id, created_by_id: user.id };
       if (following) {
-        const mine = await base44.entities.Follow.filter(
-          post.restaurant_id
-            ? { restaurant_id: post.restaurant_id, created_by_id: user.id }
-            : { creator_id: post.author_id, created_by_id: user.id },
-          "-created_date",
-          1
-        );
-        if (mine[0]) await base44.entities.Follow.delete(mine[0].id);
+        const mine = await base44.entities.Follow.filter(q, "-created_date", 100);
+        await Promise.all(mine.map((f) => base44.entities.Follow.delete(f.id)));
         setFollowing(false);
       } else {
-        await base44.entities.Follow.create(followTarget);
-        setFollowing(true);
+        // Re-check to avoid creating a duplicate follow
+        const existing = await base44.entities.Follow.filter(q, "-created_date", 1);
+        if (existing.length) {
+          setFollowing(true);
+        } else {
+          await base44.entities.Follow.create(followTarget);
+          setFollowing(true);
+        }
       }
     } catch {
       /* ignore */
+    } finally {
+      setBusy(false);
     }
   };
 

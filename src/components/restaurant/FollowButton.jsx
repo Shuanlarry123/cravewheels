@@ -48,24 +48,26 @@ export default function FollowButton({ restaurantId, restaurantName, restaurantL
     }
     setBusy(true);
     try {
+      const q = { restaurant_id: restaurantId, created_by_id: me.id };
       if (following) {
-        const mine = await base44.entities.Follow.filter(
-          { restaurant_id: restaurantId, created_by_id: me.id },
-          "-created_date",
-          5
-        );
-        if (mine[0]) await base44.entities.Follow.delete(mine[0].id);
+        const mine = await base44.entities.Follow.filter(q, "-created_date", 100);
+        await Promise.all(mine.map((f) => base44.entities.Follow.delete(f.id)));
         setFollowing(false);
-        setFollowers((n) => Math.max(0, n - 1));
+        setFollowers((n) => Math.max(0, n - mine.length));
       } else {
-        await base44.entities.Follow.create({
-          restaurant_id: restaurantId,
-          restaurant_name: restaurantName,
-          restaurant_logo_url: restaurantLogoUrl,
-        });
-        setFollowing(true);
-        setFollowers((n) => n + 1);
-        toast.success(`Following ${restaurantName || "restaurant"}`);
+        const existing = await base44.entities.Follow.filter(q, "-created_date", 1);
+        if (existing.length) {
+          setFollowing(true);
+        } else {
+          await base44.entities.Follow.create({
+            restaurant_id: restaurantId,
+            restaurant_name: restaurantName,
+            restaurant_logo_url: restaurantLogoUrl,
+          });
+          setFollowing(true);
+          setFollowers((n) => n + 1);
+          toast.success(`Following ${restaurantName || "restaurant"}`);
+        }
       }
     } catch {
       toast.error("Could not update follow");
