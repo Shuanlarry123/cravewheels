@@ -7,11 +7,34 @@ import MapboxExploreMap from "@/components/MapboxExploreMap";
 import { getUserLocation } from "@/lib/distance";
 import { CartProvider } from "@/lib/cartContext";
 
-const CUISINES = ["All", "Burgers", "Pizza", "Sushi", "Salads", "Desserts", "Drinks", "Bowls"];
+const FILTERS = [
+  { id: "all", label: "All" },
+  { id: "fast_food", label: "Fast Food" },
+  { id: "truck", label: "Truck" },
+  { id: "restaurant", label: "Restaurant" },
+  { id: "breakfast", label: "Breakfast" },
+  { id: "dinner", label: "Dinner" },
+];
+
+const TYPE_LABELS = {
+  restaurant: "Restaurant",
+  food_truck: "Food Truck",
+  ghost_kitchen: "Ghost Kitchen",
+};
+
+function matchFilter(r, filter) {
+  if (filter === "all") return true;
+  if (filter === "truck") return r.restaurant_type === "food_truck";
+  if (filter === "restaurant") return r.restaurant_type === "restaurant";
+  // meal / food-style chips match loosely against cuisine or name
+  const keyword = filter === "fast_food" ? "fast food" : filter;
+  const hay = `${r.cuisine_type || ""} ${r.name || ""}`.toLowerCase();
+  return hay.includes(keyword);
+}
 
 function SearchInner() {
   const [query, setQuery] = useState("");
-  const [cuisine, setCuisine] = useState("All");
+  const [filter, setFilter] = useState("all");
   const [restaurants, setRestaurants] = useState([]);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,10 +61,9 @@ function SearchInner() {
         !query ||
         r.name?.toLowerCase().includes(query.toLowerCase()) ||
         r.cuisine_type?.toLowerCase().includes(query.toLowerCase());
-      const matchC = cuisine === "All" || r.cuisine_type === cuisine;
-      return matchQ && matchC;
+      return matchQ && matchFilter(r, filter);
     });
-  }, [restaurants, query, cuisine]);
+  }, [restaurants, query, filter]);
 
   return (
     <CustomerLayout>
@@ -75,17 +97,17 @@ function SearchInner() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto no-scrollbar mt-2">
-            {CUISINES.map((c) => (
+            {FILTERS.map((f) => (
               <button
-                key={c}
-                onClick={() => setCuisine(c)}
+                key={f.id}
+                onClick={() => setFilter(f.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                  cuisine === c
+                  filter === f.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-card/90 border border-border text-muted-foreground"
                 }`}
               >
-                {c}
+                {f.label}
               </button>
             ))}
           </div>
@@ -122,7 +144,14 @@ function SearchInner() {
                   </div>
                   <div className="p-2.5">
                     <p className="text-sm font-semibold line-clamp-1">{r.name}</p>
-                    <p className="text-[11px] text-muted-foreground line-clamp-1">{r.cuisine_type}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[11px] text-muted-foreground line-clamp-1">{r.cuisine_type}</p>
+                      {r.restaurant_type && r.restaurant_type !== "restaurant" && (
+                        <span className="text-[9px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded-full shrink-0">
+                          {TYPE_LABELS[r.restaurant_type]}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1 text-[11px] mt-1">
                       <Star className="w-3 h-3 fill-primary text-primary" /> {r.rating?.toFixed(1)}
                       <span className="mx-1 text-muted-foreground">·</span>

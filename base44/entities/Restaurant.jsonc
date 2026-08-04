@@ -17,6 +17,15 @@
     "cuisine_type": {
       "type": "string"
     },
+    "restaurant_type": {
+      "type": "string",
+      "enum": [
+        "restaurant",
+        "food_truck",
+        "ghost_kitchen"
+      ],
+      "default": "restaurant"
+    },
     "address": {
       "type": "string"
     },
