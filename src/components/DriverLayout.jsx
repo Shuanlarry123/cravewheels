@@ -14,7 +14,7 @@ const nav = [
 
 const MORE = [
   { to: "/driver/settings", icon: SettingsIcon, label: "Settings" },
-  { to: "/about", icon: Info, label: "About CraveReel" },
+  { to: "/about", icon: Info, label: "About Cravewheels" },
   { to: "/privacy", icon: ShieldCheck, label: "Privacy & Security" },
 ];
 

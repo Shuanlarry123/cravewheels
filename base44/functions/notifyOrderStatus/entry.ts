@@ -29,13 +29,13 @@ Deno.serve(async (req) => {
         if (email) {
           const isPickedUp = status === 'picked_up';
           const subject = isPickedUp
-            ? 'Your CraveReel order is on its way'
-            : 'Your CraveReel order has been delivered';
+            ? 'Your Cravewheels order is on its way'
+            : 'Your Cravewheels order has been delivered';
           const intro = isPickedUp
             ? `Good news! Your driver picked up your order from ${order.restaurant_name || 'the restaurant'} and is heading your way.`
             : `Your order from ${order.restaurant_name || 'the restaurant'} has been delivered. Enjoy your meal!`;
           const message =
-            `Hi,\n\n${intro}\n\nOrder total: $${Number(order.total_amount || 0).toFixed(2)}\n\nThanks for ordering with CraveReel.`;
+            `Hi,\n\n${intro}\n\nOrder total: $${Number(order.total_amount || 0).toFixed(2)}\n\nThanks for ordering with Cravewheels.`;
           await base44.asServiceRole.integrations.Core.SendEmail({
             to: email,
             subject,

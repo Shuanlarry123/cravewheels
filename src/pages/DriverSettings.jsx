@@ -146,7 +146,7 @@ export default function DriverSettings() {
         {/* General */}
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-1 mt-4">General</h2>
         <div className="space-y-3 mb-6">
-          <Row to="/about" icon={Info} title="About CraveReel" desc="What the platform does and how it works." />
+          <Row to="/about" icon={Info} title="About Cravewheels" desc="What the platform does and how it works." />
           <Row to="/privacy" icon={ShieldCheck} title="Privacy & Security" desc="How we use your location and data." />
         </div>
 

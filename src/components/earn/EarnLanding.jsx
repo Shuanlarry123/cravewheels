@@ -56,7 +56,7 @@ export const EARN_CONFIG = {
     benefits: [
       { icon: TrendingUp, title: "More customers", desc: "Reach diners across your delivery radius." },
       { icon: Banknote, title: "Weekly payouts", desc: "Reliable payments deposited every week." },
-      { icon: Users, title: "CraveReel creators", desc: "Creators showcase your dishes and drive new orders." },
+      { icon: Users, title: "Cravewheels creators", desc: "Creators showcase your dishes and drive new orders." },
       { icon: ShieldCheck, title: "Business support", desc: "Dedicated help when you need it." },
     ],
     requirements: ["Valid business license", "Food handling permit", "Kitchen address", "Bank account for payouts"],
@@ -193,7 +193,7 @@ export default function EarnLanding({ config }) {
           <ArrowRight className="w-5 h-5" />
         </button>
         <p className="text-center text-xs text-muted-foreground mt-3">
-          By applying, you agree to CraveReel's terms and background check policy.
+          By applying, you agree to Cravewheels's terms and background check policy.
         </p>
       </div>
     </div>

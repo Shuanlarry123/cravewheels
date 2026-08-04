@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 const CartContext = createContext(null);
-const STORAGE_KEY = "cravereel_cart";
-const REF_KEY = "cravereel_ref_code";
+const STORAGE_KEY = "cravewheels_cart";
+const REF_KEY = "cravewheels_ref_code";
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);

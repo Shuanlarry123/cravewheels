@@ -44,7 +44,7 @@ export default function StepBackground({ data, update, onNext, onBack }) {
             className="mt-0.5 w-4 h-4 accent-primary shrink-0"
           />
           <span className="text-xs text-muted-foreground leading-relaxed">
-            I authorize CraveReel to conduct a background check and review my motor vehicle record.
+            I authorize Cravewheels to conduct a background check and review my motor vehicle record.
             I confirm all information and documents I provided are accurate and belong to me.
             I understand that providing false information will result in permanent removal.
           </span>
@@ -54,7 +54,7 @@ export default function StepBackground({ data, update, onNext, onBack }) {
           <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <p>
             Your data is encrypted and used only for verification. Background checks are processed by
-            CraveReel's compliance team.
+            Cravewheels's compliance team.
           </p>
         </div>
       </div>

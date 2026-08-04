@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-const KEY = "cravereel_lite_mode";
-const EVT = "cravereel-lite-mode-change";
+const KEY = "cravewheels_lite_mode";
+const EVT = "cravewheels-lite-mode-change";
 
 export function getLiteMode() {
   try {

@@ -207,7 +207,7 @@ export default function AdminDashboard() {
     setBusy(true);
     try {
       await base44.functions.invoke("manageStripeCard", { action: "approveCard", driver_id: id });
-      toast.success("CraveReel card issued");
+      toast.success("Cravewheels card issued");
       await load();
     } catch {
       toast.error("Failed to issue card");

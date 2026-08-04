@@ -82,14 +82,14 @@ function AboutInner() {
         {/* Hero */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-3xl mx-auto mb-3">🍴</div>
-          <h1 className="text-2xl font-bold">CraveReel</h1>
+          <h1 className="text-2xl font-bold">Cravewheels</h1>
           <p className="text-sm text-muted-foreground mt-1">Discover and order your next meal through immersive video.</p>
         </div>
 
         {/* What we are */}
         <div className="bg-card border border-border rounded-2xl p-4 mb-6">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            CraveReel is a video-first food delivery marketplace. Instead of scrolling static menus, you swipe through
+            Cravewheels is a video-first food delivery marketplace. Instead of scrolling static menus, you swipe through
             short, crave-worthy clips of real dishes from local restaurants — then order in a tap. We connect hungry
             customers, restaurants, delivery drivers, and creators in one seamless experience.
           </p>
@@ -168,7 +168,7 @@ function AboutInner() {
         </div>
 
         {/* Join */}
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">Join CraveReel</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">Join Cravewheels</h2>
         <div className="space-y-3 mb-6">
           <ApplyRow to="/apply/driver" icon={Bike} title="Apply as a Driver" desc="Deliver food and earn on your schedule." />
           <ApplyRow to="/apply/restaurant" icon={Store} title="Apply as a Restaurant" desc="List your dishes and reach hungry customers." />

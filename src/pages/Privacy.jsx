@@ -70,7 +70,7 @@ function PrivacyInner() {
 
         <div className="bg-card border border-border rounded-2xl p-4 mb-6">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            CraveReel is a video-first food delivery marketplace connecting customers, restaurants,
+            Cravewheels is a video-first food delivery marketplace connecting customers, restaurants,
             drivers, and creators. This policy explains what data we collect, how we use it — including
             how we use GPS — and the choices you have.
           </p>

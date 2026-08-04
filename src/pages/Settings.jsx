@@ -278,14 +278,14 @@ function AccountInner() {
 
           {/* Earn */}
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2 px-1">
-            Earn with CraveReel
+            Earn with Cravewheels
           </p>
           <NavRow to="/earn/driver" icon={Bike} title="Earn by driving or delivering" desc="Deliver food on your schedule and get paid weekly" />
           <NavRow to="/earn/restaurant" icon={Store} title="Earn by selling" desc="List your dishes and reach thousands of hungry customers" />
           <NavRow to="/earn/creator" icon={Megaphone} title="Earn by sharing" desc="Share dishes you love and earn commission per order" badge="NEW" />
 
           {/* General */}
-          <NavRow to="/about" icon={Info} title="About CraveReel" desc="What the platform does and how it works" />
+          <NavRow to="/about" icon={Info} title="About Cravewheels" desc="What the platform does and how it works" />
           <NavRow to="/privacy" icon={ShieldCheck} title="Privacy & Security" desc="What data we collect and how we use GPS" />
 
           {/* Admin */}

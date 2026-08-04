@@ -58,7 +58,7 @@ export default function StripeVirtualCard({
         card_request_postal_code: form.postal_code,
         card_request_country: form.country,
       });
-      toast.success("Card request submitted! CraveReel will review it shortly.");
+      toast.success("Card request submitted! Cravewheels will review it shortly.");
       setShowForm(false);
       onIssued?.();
     } catch {
@@ -73,7 +73,7 @@ export default function StripeVirtualCard({
       <div>
         <p className="text-sm font-semibold">Cardholder details</p>
         <p className="text-xs text-muted-foreground">
-          Required to issue your CraveReel debit card. An admin will review your request.
+          Required to issue your Cravewheels debit card. An admin will review your request.
         </p>
       </div>
       <input className={inputCls} placeholder="Cardholder name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -111,7 +111,7 @@ export default function StripeVirtualCard({
           <CreditCard className="w-5 h-5 text-primary" />
         </span>
         <div className="text-left flex-1">
-          <p className="text-sm font-semibold">Get your CraveReel card</p>
+          <p className="text-sm font-semibold">Get your Cravewheels card</p>
           <p className="text-xs text-muted-foreground">Request a virtual debit card to spend your earnings.</p>
         </div>
       </button>
@@ -130,7 +130,7 @@ export default function StripeVirtualCard({
         </span>
         <div className="flex-1">
           <p className="text-sm font-semibold">Request submitted</p>
-          <p className="text-xs text-muted-foreground">CraveReel is reviewing your card request.</p>
+          <p className="text-xs text-muted-foreground">Cravewheels is reviewing your card request.</p>
         </div>
       </div>
     );
@@ -176,12 +176,12 @@ export default function StripeVirtualCard({
       <span className="text-sm font-bold italic text-white/90 tracking-wide">VISA</span>
     );
 
-  const CraveReelLogo = () => (
+  const CravewheelsLogo = () => (
     <div className="flex items-center gap-1.5">
       <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-md">
         <Utensils className="w-3 h-3 text-white" />
       </span>
-      <span className="text-xs font-extrabold text-white tracking-tight">CraveReel</span>
+      <span className="text-xs font-extrabold text-white tracking-tight">Cravewheels</span>
     </div>
   );
 
@@ -192,7 +192,7 @@ export default function StripeVirtualCard({
     >
       <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
       <div className="relative flex items-start justify-between">
-        <CraveReelLogo />
+        <CravewheelsLogo />
         <BrandMark />
       </div>
       <div className="relative flex items-center gap-2">
@@ -244,7 +244,7 @@ export default function StripeVirtualCard({
         </div>
       </div>
       <div className="text-white/70 text-[9px] leading-snug space-y-0.5 mt-auto">
-        <p className="text-white font-semibold text-[10px]">CraveReel</p>
+        <p className="text-white font-semibold text-[10px]">Cravewheels</p>
         <p className="flex items-center gap-1 truncate">
           <User className="w-2.5 h-2.5 shrink-0" /> {holder}
         </p>
@@ -258,7 +258,7 @@ export default function StripeVirtualCard({
           </span>
         </p>
         <p className="text-white/40 pt-1">
-          Issued by CraveReel pursuant to a license from {brand.includes("master") ? "Mastercard" : "Visa"}.
+          Issued by Cravewheels pursuant to a license from {brand.includes("master") ? "Mastercard" : "Visa"}.
         </p>
       </div>
     </div>

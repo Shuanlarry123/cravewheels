@@ -75,7 +75,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
 
   const share = async () => {
     const url = `${window.location.origin}/item/${item.id}`;
-    const title = `${item.name} — ${item.restaurant_name || "CraveReel"}`;
+    const title = `${item.name} — ${item.restaurant_name || "Cravewheels"}`;
     let copied = false;
 
     // Always copy the link to the clipboard first (works as a standalone convenience

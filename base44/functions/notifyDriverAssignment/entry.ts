@@ -45,7 +45,7 @@ export default async function(req) {
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: email,
           subject: 'New delivery assigned — open your dispatch map',
-          body: `Hi ${name},\n\nA new delivery has been assigned to you from ${restName}.\n\nOrder total: $${total}\n\nOpen the CraveReel app and tap your Active Deliveries / dispatch map to view the route and get started.\n\nCraveReel`,
+          body: `Hi ${name},\n\nA new delivery has been assigned to you from ${restName}.\n\nOrder total: $${total}\n\nOpen the Cravewheels app and tap your Active Deliveries / dispatch map to view the route and get started.\n\nCravewheels`,
         });
         emailed = true;
       } catch (e) {

@@ -39,7 +39,7 @@ export default function RestaurantOnboarding({ onCreated }) {
   return (
     <div className="px-4 pt-10 pb-12">
       <h1 className="text-2xl font-bold mb-1">Start your restaurant</h1>
-      <p className="text-sm text-muted-foreground mb-6">Add your details to join CraveReel.</p>
+      <p className="text-sm text-muted-foreground mb-6">Add your details to join Cravewheels.</p>
       <div className="space-y-3">
         <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Restaurant name" className="w-full h-11 rounded-xl bg-card border border-border px-3 text-sm" />
 
