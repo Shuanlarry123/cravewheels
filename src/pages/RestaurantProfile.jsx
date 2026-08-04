@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { base44 } from "@/api/base44Client";
 import RestaurantVideoMenu from "@/components/restaurant/RestaurantVideoMenu";
 import RestaurantReviews from "@/components/restaurant/RestaurantReviews";
+import FollowButton from "@/components/restaurant/FollowButton";
 import { ArrowLeft, Star, Store, Radio, MapPin } from "lucide-react";
 
 export default function RestaurantProfile() {
@@ -81,6 +82,12 @@ export default function RestaurantProfile() {
           </span>
           <span className="text-muted-foreground">· ${restaurant.delivery_fee?.toFixed(2)} delivery</span>
         </div>
+
+        <FollowButton
+          restaurantId={restaurant.id}
+          restaurantName={restaurant.name}
+          restaurantLogoUrl={restaurant.logo_url}
+        />
 
         {restaurant.description && <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{restaurant.description}</p>}
 

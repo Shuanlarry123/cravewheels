@@ -14,10 +14,12 @@ import {
   Pencil,
   ChevronRight,
   PlayCircle,
+  Store,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import RestaurantOwnerProfile from "@/components/profile/RestaurantOwnerProfile";
 import PostFeed from "@/components/post/PostFeed";
+import FollowingList from "@/components/profile/FollowingList";
 import { CartProvider } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { id: "saved", label: "Saved", icon: Bookmark },
   { id: "liked", label: "Liked", icon: Heart },
+  { id: "following", label: "Following", icon: Store },
   { id: "orders", label: "Orders", icon: Receipt },
   { id: "comments", label: "Comments", icon: MessageCircle },
 ];
@@ -286,6 +289,8 @@ function ProfileInner() {
             ) : (
               <p className="text-center text-sm text-muted-foreground py-10">No liked videos yet. Tap the heart on a video you love.</p>
             ))}
+
+          {tab === "following" && <FollowingList />}
 
           {tab === "orders" &&
             (orders.length ? (

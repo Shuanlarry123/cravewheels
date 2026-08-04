@@ -1,0 +1,18 @@
+{
+  "name": "Follow",
+  "type": "object",
+  "properties": {
+    "restaurant_id": {
+      "type": "string"
+    },
+    "restaurant_name": {
+      "type": "string"
+    },
+    "restaurant_logo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "restaurant_id"
+  ]
+}
