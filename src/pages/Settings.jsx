@@ -28,7 +28,6 @@ import { Switch } from "@/components/ui/switch";
 import { useLiteMode } from "@/lib/liteMode";
 import { useAdminRole } from "@/lib/useAdminRole";
 import { useAuth } from "@/lib/AuthContext";
-import { Image } from "@/components/ui/image";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -178,7 +177,7 @@ function AccountInner() {
             <div className="relative shrink-0">
               <div className="w-[72px] h-[72px] rounded-full bg-primary/15 overflow-hidden flex items-center justify-center text-2xl font-bold text-primary">
                 {profile.profile_picture ? (
-                  <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
+                  <img src={profile.profile_picture} alt="profile" className="w-full h-full object-cover" />
                 ) : (
                   initial
                 )}
