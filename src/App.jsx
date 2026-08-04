@@ -79,7 +79,7 @@ const AuthenticatedApp = () => {
         <Route path="/driver/earnings" element={<RoleGate requiredRole="driver"><DriverEarnings /></RoleGate>} />
         <Route path="/driver/history" element={<RoleGate requiredRole="driver"><DriverHistory /></RoleGate>} />
         <Route path="/driver/settings" element={<RoleGate requiredRole="driver"><DriverSettings /></RoleGate>} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/account" element={<Settings />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/apply/:type" element={<Apply />} />
