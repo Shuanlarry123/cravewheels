@@ -25,9 +25,9 @@ export default function VerifiedComment({ comment: c, orderInfo }) {
             </span>
           )}
         </div>
-        {verified && (
+        {verified && orderInfo?.[c.created_by_id]?.count > 0 && (
           <div className="mt-0.5">
-            <OrderBadge info={orderInfo?.[c.created_by_id]} itemName={c.menu_item_name} />
+            <OrderBadge info={orderInfo[c.created_by_id]} itemName={c.menu_item_name} />
           </div>
         )}
         {verified && c.rating ? (

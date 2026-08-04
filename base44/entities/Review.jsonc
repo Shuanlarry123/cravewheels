@@ -8,6 +8,9 @@
     "restaurant_name": {
       "type": "string"
     },
+    "author_name": {
+      "type": "string"
+    },
     "order_id": {
       "type": "string"
     },
@@ -23,7 +26,6 @@
     }
   },
   "required": [
-    "restaurant_id",
-    "video_url"
+    "restaurant_id"
   ]
 }

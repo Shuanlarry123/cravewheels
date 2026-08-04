@@ -48,3 +48,41 @@ export function useOrderedItems() {
 
   return orderedIds;
 }
+
+/**
+ * Returns whether the current user has bought (any non-cancelled order) from a
+ * given restaurant — powers buyer-only reviews and the verified-comment badge
+ * on the For You feed.
+ * - `null` while loading (caller should treat as "not yet verified").
+ * - `boolean` once resolved.
+ */
+export function useOrderedFromRestaurant(restaurantId) {
+  const { user } = useAuth();
+  const [bought, setBought] = useState(null);
+
+  useEffect(() => {
+    if (!user || !restaurantId) {
+      setBought(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const orders = await base44.entities.Order.filter(
+          { created_by_id: user.id, restaurant_id: restaurantId },
+          "-created_date",
+          200
+        );
+        if (cancelled) return;
+        setBought(orders.some((o) => o.status !== "cancelled"));
+      } catch {
+        if (!cancelled) setBought(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, restaurantId]);
+
+  return bought;
+}
