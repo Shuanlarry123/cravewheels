@@ -21,7 +21,6 @@ import RestaurantWeeklyPerformance from "@/components/restaurant/RestaurantWeekl
 import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import RestaurantSpecials from "@/components/restaurant/RestaurantSpecials";
 import StripeVirtualCard from "@/components/stripe/StripeVirtualCard";
-import PostComposer from "@/components/post/PostComposer";
 import PostFeed from "@/components/post/PostFeed";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -221,17 +220,14 @@ export default function RestaurantDashboard() {
           )}
 
           {tab === "feed" && (
-            <div className="space-y-4">
-              <PostComposer
-                authorType="restaurant"
-                authorId={restaurant.id}
-                authorName={restaurant.name}
-                authorAvatarUrl={restaurant.logo_url}
-                restaurantId={restaurant.id}
-                onCreated={() => {}}
-              />
-              <PostFeed authorType="restaurant" authorId={restaurant.id} title="My Feed" />
-            </div>
+            <PostFeed
+              authorType="restaurant"
+              authorId={restaurant.id}
+              authorName={restaurant.name}
+              authorAvatarUrl={restaurant.logo_url}
+              restaurantId={restaurant.id}
+              title="My Feed"
+            />
           )}
 
           {tab === "orders" && (

@@ -98,7 +98,7 @@ export default function RestaurantProfile() {
 
         <RestaurantReviews restaurantId={id} restaurantName={restaurant.name} />
 
-        <PostFeed authorType="restaurant" authorId={id} title="Feed" />
+        <PostFeed authorType="restaurant" authorId={id} title="Feed" editable={false} />
       </div>
     </div>
   );

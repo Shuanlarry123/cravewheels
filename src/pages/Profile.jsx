@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import RestaurantOwnerProfile from "@/components/profile/RestaurantOwnerProfile";
-import PostComposer from "@/components/post/PostComposer";
 import PostFeed from "@/components/post/PostFeed";
 import { CartProvider } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
@@ -237,14 +236,13 @@ function ProfileInner() {
         {/* Creator feed upload */}
         {creatorProfile && (
           <div className="mt-6">
-            <PostComposer
+            <PostFeed
               authorType="creator"
               authorId={user?.id}
               authorName={profile.full_name || profile.email || "Creator"}
               authorAvatarUrl={profile.profile_picture}
-              onCreated={() => {}}
+              title="My Feed"
             />
-            <PostFeed authorType="creator" authorId={user?.id} title="My Feed" />
           </div>
         )}
 

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import CreatorOnboarding from "@/components/creator/CreatorOnboarding";
-import PostComposer from "@/components/post/PostComposer";
 import PostFeed from "@/components/post/PostFeed";
 import CreatorStats from "@/components/creator/CreatorStats";
 import CreatorShares from "@/components/creator/CreatorShares";
@@ -85,14 +84,13 @@ export default function CreatorDashboard() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground px-1">
               My Feed
             </h2>
-            <PostComposer
+            <PostFeed
               authorType="creator"
               authorId={me?.id}
               authorName={me?.full_name || me?.email || profile.social_handle || "Creator"}
               authorAvatarUrl={me?.profile_picture}
-              onCreated={() => {}}
+              title="My Feed"
             />
-            <PostFeed authorType="creator" authorId={me?.id} title="My Feed" />
           </div>
         </div>
       </div>
