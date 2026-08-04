@@ -71,7 +71,7 @@ function ApplyInner() {
       <CustomerLayout>
         <div className="px-4 pt-8 pb-24 min-h-screen">
           <button
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/account")}
             className="flex items-center gap-1 text-sm text-muted-foreground mb-4"
           >
             <ChevronLeft className="w-4 h-4" /> Back
@@ -85,10 +85,10 @@ function ApplyInner() {
                 : "Your application is pending review. We'll notify you once it's approved."}
             </p>
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/account")}
               className="mt-4 w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
             >
-              Back to Settings
+              Back to Account
             </button>
           </div>
         </div>
@@ -100,10 +100,10 @@ function ApplyInner() {
     <CustomerLayout>
       <div className="px-4 pt-4">
         <button
-          onClick={() => navigate("/settings")}
+          onClick={() => navigate("/account")}
           className="flex items-center gap-1 text-sm text-muted-foreground"
         >
-          <ChevronLeft className="w-4 h-4" /> Back to Settings
+          <ChevronLeft className="w-4 h-4" /> Back to Account
         </button>
       </div>
       <div className="pb-24">

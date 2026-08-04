@@ -33,6 +33,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Apply from '@/pages/Apply';
 import Privacy from '@/pages/Privacy';
+import Earn from '@/pages/Earn';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/apply/:type" element={<Apply />} />
+        <Route path="/earn/:type" element={<Earn />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/restaurant-dashboard" element={<RoleGate requiredRole="restaurant"><RestaurantDashboard /></RoleGate>} />
         <Route path="/creator-dashboard" element={<RoleGate requiredRole="creator"><CreatorDashboard /></RoleGate>} />

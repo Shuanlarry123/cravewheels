@@ -7,8 +7,8 @@ import {
   Shield,
   ShieldCheck,
   Bike,
-  Utensils,
-  Sparkles,
+  Store,
+  Megaphone,
   Zap,
   Trash2,
   LogOut,
@@ -276,10 +276,13 @@ function AccountInner() {
             <Switch checked={lite} onCheckedChange={setLite} aria-label="Toggle Lite Mode" />
           </div>
 
-          {/* Join the platform */}
-          <NavRow to="/apply/driver" icon={Bike} title="Apply as Driver" desc="Deliver food and earn on your schedule" />
-          <NavRow to="/apply/restaurant" icon={Utensils} title="Apply as Restaurant" desc="List your dishes and reach hungry customers" />
-          <NavRow to="/apply/influencer" icon={Sparkles} title="Apply as Influencer" desc="Share dishes and earn commission per order" badge="NEW" />
+          {/* Earn */}
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2 px-1">
+            Earn with CraveReel
+          </p>
+          <NavRow to="/earn/driver" icon={Bike} title="Earn by driving or delivering" desc="Deliver food on your schedule and get paid weekly" />
+          <NavRow to="/earn/restaurant" icon={Store} title="Earn by selling" desc="List your dishes and reach thousands of hungry customers" />
+          <NavRow to="/earn/creator" icon={Megaphone} title="Earn by sharing" desc="Share dishes you love and earn commission per order" badge="NEW" />
 
           {/* General */}
           <NavRow to="/about" icon={Info} title="About CraveReel" desc="What the platform does and how it works" />
