@@ -8,6 +8,8 @@ import RestaurantMenuGrid from "@/components/restaurant/RestaurantMenuGrid";
 import RestaurantOrders from "@/components/restaurant/RestaurantOrders";
 import AddressEditor from "@/components/restaurant/AddressEditor";
 import TruckLocationEditor from "@/components/restaurant/TruckLocationEditor";
+import PostComposer from "@/components/post/PostComposer";
+import PostFeed from "@/components/post/PostFeed";
 import { cn } from "@/lib/utils";
 
 export default function RestaurantOwnerProfile({ restaurant }) {
@@ -163,6 +165,19 @@ export default function RestaurantOwnerProfile({ restaurant }) {
           />
         )}
         <RestaurantMenuGrid items={menuItems} onChanged={() => loadMenu(restaurant.id)} />
+      </div>
+
+      {/* Feed — post promo/behind-the-scenes videos */}
+      <div className="mb-5">
+        <PostComposer
+          authorType="restaurant"
+          authorId={restaurant.id}
+          authorName={restaurant.name}
+          authorAvatarUrl={restaurant.logo_url}
+          restaurantId={restaurant.id}
+          onCreated={() => {}}
+        />
+        <PostFeed authorType="restaurant" authorId={restaurant.id} title="My Feed" />
       </div>
 
       {/* Orders */}

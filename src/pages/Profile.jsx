@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import RestaurantOwnerProfile from "@/components/profile/RestaurantOwnerProfile";
+import PostComposer from "@/components/post/PostComposer";
+import PostFeed from "@/components/post/PostFeed";
 import { CartProvider } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -51,6 +53,7 @@ function ProfileInner() {
   const isAdmin = useAdminRole();
   const [profile, setProfile] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
+  const [creatorProfile, setCreatorProfile] = useState(null);
   const [saved, setSaved] = useState([]);
   const [liked, setLiked] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -81,17 +84,19 @@ function ProfileInner() {
           setRestaurant(mine[0]);
           return;
         }
-        const [sv, lk, ords, cmts] = await Promise.all([
+        const [sv, lk, ords, cmts, creators] = await Promise.all([
           base44.entities.Saved.filter({ created_by_id: user.id }, "-created_date", 60),
           base44.entities.Like.filter({ created_by_id: user.id }, "-created_date", 60),
           base44.entities.Order.filter({ created_by_id: user.id }, "-created_date", 60),
           base44.entities.Comment.filter({ created_by_id: user.id }, "-created_date", 60),
+          base44.entities.CreatorProfile.filter({ created_by_id: user.id }, "-created_date", 5),
         ]);
         if (cancelled) return;
         setSaved(sv);
         setLiked(lk);
         setOrders(ords);
         setComments(cmts);
+        if (creators && creators.length) setCreatorProfile(creators[0]);
       } catch {
         /* ignore */
       }
@@ -226,6 +231,20 @@ function ProfileInner() {
             <button onClick={() => setEditing(true)} className="text-muted-foreground mt-0.5">
               <Pencil className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Creator feed upload */}
+        {creatorProfile && (
+          <div className="mt-6">
+            <PostComposer
+              authorType="creator"
+              authorId={user?.id}
+              authorName={profile.full_name || profile.email || "Creator"}
+              authorAvatarUrl={profile.profile_picture}
+              onCreated={() => {}}
+            />
+            <PostFeed authorType="creator" authorId={user?.id} title="My Feed" />
           </div>
         )}
 
