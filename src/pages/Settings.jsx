@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
@@ -18,6 +18,11 @@ import {
   Star,
   BadgeCheck,
   User as UserIcon,
+  Camera,
+  Pencil,
+  Check,
+  X,
+  Loader2,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
@@ -90,6 +95,10 @@ function AccountInner() {
   const [lite, setLite] = useLiteMode();
   const isAdmin = useAdminRole();
   const [deleting, setDeleting] = useState(false);
+  const fileRef = useRef(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -104,6 +113,37 @@ function AccountInner() {
       })
       .catch(() => {});
   }, [user]);
+
+  const onPickPicture = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSaving(true);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.auth.updateMe({ profile_picture: file_url });
+      setProfile((p) => ({ ...p, profile_picture: file_url }));
+      toast.success("Picture updated");
+    } catch {
+      toast.error("Failed to upload picture");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveName = async () => {
+    if (!nameDraft.trim() || saving) return;
+    try {
+      setSaving(true);
+      await base44.auth.updateMe({ full_name: nameDraft.trim() });
+      setProfile((p) => ({ ...p, full_name: nameDraft.trim() }));
+      setEditingName(false);
+      toast.success("Name updated");
+    } catch {
+      toast.error("Failed to update name");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
@@ -134,10 +174,53 @@ function AccountInner() {
   return (
     <CustomerLayout>
       <div className="px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-28 min-h-screen">
-        {/* Header */}
+        {/* Profile section */}
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold leading-tight tracking-tight">{displayName}</h1>
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveName()}
+                  placeholder="Your name"
+                  maxLength={50}
+                  className="flex-1 min-w-0 h-10 rounded-xl bg-card border border-border px-3 text-base font-bold"
+                  autoFocus
+                />
+                <button
+                  onClick={saveName}
+                  disabled={saving || !nameDraft.trim()}
+                  className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingName(false);
+                    setNameDraft(profile.full_name || "");
+                  }}
+                  disabled={saving}
+                  className="shrink-0 w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold leading-tight tracking-tight">{displayName}</h1>
+                <button
+                  onClick={() => {
+                    setEditingName(true);
+                    setNameDraft(profile.full_name || "");
+                  }}
+                  className="text-muted-foreground active:scale-90 transition-transform"
+                  aria-label="Edit name"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-3 mt-2.5">
               <span className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground">
                 <Star className="w-4 h-4 fill-primary text-primary" />
@@ -149,16 +232,24 @@ function AccountInner() {
               </span>
             </div>
           </div>
-          <button
-            onClick={() => navigate("/profile")}
-            className="shrink-0 w-14 h-14 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center text-xl font-bold text-primary active:scale-95 transition-transform"
-          >
-            {profile.profile_picture ? (
-              <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
-            ) : (
-              initial
-            )}
-          </button>
+          <div className="relative shrink-0">
+            <div className="w-14 h-14 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center text-xl font-bold text-primary">
+              {profile.profile_picture ? (
+                <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
+              ) : (
+                initial
+              )}
+            </div>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={saving}
+              className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-90 transition-transform disabled:opacity-50"
+              aria-label="Change profile picture"
+            >
+              {saving && !editingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPicture} />
+          </div>
         </div>
 
         {/* Role chip */}
