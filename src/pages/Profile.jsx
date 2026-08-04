@@ -164,7 +164,7 @@ function ProfileInner() {
           <div className="relative shrink-0">
             <div className="w-20 h-20 rounded-full bg-primary/20 overflow-hidden flex items-center justify-center text-2xl font-bold text-primary">
               {profile.profile_picture ? (
-                <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
+                <img src={profile.profile_picture} alt="profile" className="w-full h-full object-cover" />
               ) : (
                 (profile.full_name || profile.email || "U")[0].toUpperCase()
               )}
