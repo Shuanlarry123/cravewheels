@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
-  ChevronDown,
   ChevronRight,
   Info,
   Shield,
@@ -17,7 +16,6 @@ import {
   Bookmark,
   Star,
   BadgeCheck,
-  User as UserIcon,
   Camera,
   Pencil,
   Check,
@@ -253,18 +251,6 @@ function AccountInner() {
             </span>
           </div>
         </div>
-
-        {/* Role chip */}
-        <button
-          onClick={() => navigate("/profile")}
-          className="flex items-center gap-2.5 bg-card border border-border rounded-xl px-3.5 py-2.5 mb-5 active:scale-[0.99] transition-transform"
-        >
-          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-            <UserIcon className="w-4 h-4 text-primary" />
-          </div>
-          <span className="text-sm font-medium">Customer</span>
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        </button>
 
         {/* Quick-access tiles */}
         <div className="grid grid-cols-2 gap-3 mb-5">
