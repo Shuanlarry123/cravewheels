@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { MessageCircle, Play } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Play } from "lucide-react";
 import { Image } from "@/components/ui/image";
+import PostEngagement from "@/components/PostEngagement";
 
 /**
  * Full-screen feed card for a Post (restaurant/creator video). Shown in the
@@ -11,7 +12,6 @@ import { Image } from "@/components/ui/image";
 export default function PostVideoCard({ post, active, muted, lite }) {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (lite) return;
@@ -29,8 +29,6 @@ export default function PostVideoCard({ post, active, muted, lite }) {
     if (!lite || !playing) return;
     if (!active) setPlaying(false);
   }, [active, lite, playing]);
-
-  const open = () => navigate(`/post/${post.id}`);
 
   const AuthorChip = () =>
     post.restaurant_id ? (
@@ -109,13 +107,8 @@ export default function PostVideoCard({ post, active, muted, lite }) {
             {post.caption}
           </p>
         )}
-        <button
-          onClick={open}
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-white/15 backdrop-blur text-white text-sm font-semibold border border-white/20 active:scale-95 transition-transform"
-        >
-          <MessageCircle className="w-4 h-4" /> Comments
-        </button>
       </div>
+      <PostEngagement post={post} active={active} />
     </section>
   );
 }

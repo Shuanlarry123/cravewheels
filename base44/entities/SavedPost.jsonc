@@ -1,25 +1,27 @@
 {
-  "name": "Follow",
+  "name": "SavedPost",
   "type": "object",
   "properties": {
-    "restaurant_id": {
+    "post_id": {
       "type": "string"
     },
-    "restaurant_name": {
+    "caption": {
       "type": "string"
     },
-    "restaurant_logo_url": {
+    "video_url": {
       "type": "string"
     },
-    "creator_id": {
+    "thumbnail_url": {
       "type": "string"
     },
-    "creator_name": {
+    "author_name": {
       "type": "string"
     },
-    "creator_avatar_url": {
+    "author_type": {
       "type": "string"
     }
   },
-  "required": []
+  "required": [
+    "post_id"
+  ]
 }
