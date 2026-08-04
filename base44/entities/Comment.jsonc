@@ -8,6 +8,9 @@
     "menu_item_name": {
       "type": "string"
     },
+    "post_id": {
+      "type": "string"
+    },
     "restaurant_id": {
       "type": "string"
     },
@@ -22,11 +25,10 @@
     },
     "verified": {
       "type": "boolean",
-      "default": true
+      "default": false
     }
   },
   "required": [
-    "menu_item_id",
     "comment"
   ]
 }

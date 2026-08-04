@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { base44 } from "@/api/base44Client";
 import RestaurantVideoMenu from "@/components/restaurant/RestaurantVideoMenu";
 import RestaurantReviews from "@/components/restaurant/RestaurantReviews";
+import PostFeed from "@/components/post/PostFeed";
 import { ArrowLeft, Star, Store, Radio, MapPin } from "lucide-react";
 
 export default function RestaurantProfile() {
@@ -96,6 +97,8 @@ export default function RestaurantProfile() {
         </div>
 
         <RestaurantReviews restaurantId={id} restaurantName={restaurant.name} />
+
+        <PostFeed authorType="restaurant" authorId={id} title="Feed" />
       </div>
     </div>
   );

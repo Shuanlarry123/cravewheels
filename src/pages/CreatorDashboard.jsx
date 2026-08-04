@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import CreatorOnboarding from "@/components/creator/CreatorOnboarding";
+import PostComposer from "@/components/post/PostComposer";
+import PostFeed from "@/components/post/PostFeed";
 import CreatorStats from "@/components/creator/CreatorStats";
 import CreatorShares from "@/components/creator/CreatorShares";
 import ReferredCustomers from "@/components/creator/ReferredCustomers";
@@ -11,6 +13,7 @@ import { toast } from "react-hot-toast";
 export default function CreatorDashboard() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
+  const [me, setMe] = useState(null);
   const [shares, setShares] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +27,7 @@ export default function CreatorDashboard() {
       try {
         const u = await base44.auth.me();
         uid = u.id;
+        setMe(u);
         const profs = await base44.entities.CreatorProfile.filter({});
         const mine = profs.find((p) => p.created_by_id === u.id);
         setProfile(mine || null);
@@ -76,6 +80,20 @@ export default function CreatorDashboard() {
             <CreatorShares shares={shares} />
           </div>
           <ReferredCustomers referralCode={profile.referral_code} />
+
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground px-1">
+              My Feed
+            </h2>
+            <PostComposer
+              authorType="creator"
+              authorId={me?.id}
+              authorName={me?.full_name || me?.email || profile.social_handle || "Creator"}
+              authorAvatarUrl={me?.profile_picture}
+              onCreated={() => {}}
+            />
+            <PostFeed authorType="creator" authorId={me?.id} title="My Feed" />
+          </div>
         </div>
       </div>
     </div>

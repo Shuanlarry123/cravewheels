@@ -34,6 +34,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import Apply from '@/pages/Apply';
 import Privacy from '@/pages/Privacy';
 import Earn from '@/pages/Earn';
+import PostDetail from '@/pages/PostDetail';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -89,6 +90,7 @@ const AuthenticatedApp = () => {
         <Route path="/restaurant-dashboard" element={<RoleGate requiredRole="restaurant"><RestaurantDashboard /></RoleGate>} />
         <Route path="/creator-dashboard" element={<RoleGate requiredRole="creator"><CreatorDashboard /></RoleGate>} />
         <Route path="/discovery-map" element={<DiscoveryMap />} />
+        <Route path="/post/:id" element={<PostDetail />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

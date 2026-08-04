@@ -1,0 +1,47 @@
+{
+  "name": "Post",
+  "type": "object",
+  "properties": {
+    "author_type": {
+      "type": "string",
+      "enum": [
+        "restaurant",
+        "creator"
+      ]
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "author_avatar_url": {
+      "type": "string"
+    },
+    "restaurant_id": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "views": {
+      "type": "number",
+      "default": 0
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "author_type",
+    "author_id",
+    "video_url"
+  ]
+}

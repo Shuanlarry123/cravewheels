@@ -8,12 +8,16 @@ import StarRating from "@/components/comments/StarRating";
 import VerifiedComment from "@/components/comments/VerifiedComment";
 import TriedItButton from "@/components/comments/TriedItButton";
 
-export default function CommentSection({ itemId, itemName, restaurantId }) {
+/**
+ * Comment section shared by menu-item videos and posts.
+ * - Every user can comment.
+ * - Verified badge + rating are only for users who ordered from the restaurant.
+ * - Pass `postId` to target a post; pass `itemId` to target a menu item.
+ */
+export default function CommentSection({ itemId, itemName, restaurantId, postId }) {
   const { user } = useAuth();
-  // Verified status is based on having ordered from the *restaurant* (any dish),
-  // not this specific dish — every user can comment, but only restaurant buyers
-  // get the verified badge.
   const isBuyer = useOrderedFromRestaurant(restaurantId); // null | boolean
+  const isPost = !!postId;
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -23,7 +27,11 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
 
   const load = async () => {
     try {
-      const cmts = await base44.entities.Comment.filter({ menu_item_id: itemId }, "-created_date", 100);
+      const cmts = await base44.entities.Comment.filter(
+        isPost ? { post_id: postId } : { menu_item_id: itemId },
+        "-created_date",
+        100
+      );
       setComments(cmts);
     } catch {
       /* ignore */
@@ -36,11 +44,11 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
     load();
     const unsub = base44.entities.Comment.subscribe(() => load());
     return unsub;
-  }, [itemId]);
+  }, [itemId, postId]);
 
-  // Per-author order history for this dish → powers the "Ordered N times" badges
-  // shown on verified comments (only when the author actually ordered this dish).
+  // Per-author order history for this dish → "Ordered N times" badges (menu items only)
   useEffect(() => {
+    if (isPost) return;
     (async () => {
       try {
         const orders = await base44.entities.Order.filter({}, "-created_date", 500);
@@ -62,15 +70,16 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
         /* ignore */
       }
     })();
-  }, [itemId]);
+  }, [itemId, isPost]);
 
   const submit = async () => {
     if (!user || !text.trim() || posting) return;
     setPosting(true);
     try {
       const c = await base44.entities.Comment.create({
-        menu_item_id: itemId,
-        menu_item_name: itemName,
+        menu_item_id: isPost ? undefined : itemId,
+        menu_item_name: isPost ? undefined : itemName,
+        post_id: isPost ? postId : undefined,
         restaurant_id: restaurantId,
         author_name: user.full_name || user.email,
         comment: text.trim(),
@@ -97,7 +106,9 @@ export default function CommentSection({ itemId, itemName, restaurantId }) {
         </h2>
       </div>
 
-      <TriedItButton itemId={itemId} itemName={itemName} restaurantId={restaurantId} />
+      {!isPost && (
+        <TriedItButton itemId={itemId} itemName={itemName} restaurantId={restaurantId} />
+      )}
 
       <div className="mb-4 space-y-2">
         {isBuyer && (
