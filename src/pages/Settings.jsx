@@ -175,80 +175,82 @@ function AccountInner() {
     <CustomerLayout>
       <div className="px-4 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-28 min-h-screen">
         {/* Profile section */}
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div className="flex-1 min-w-0">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  value={nameDraft}
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveName()}
-                  placeholder="Your name"
-                  maxLength={50}
-                  className="flex-1 min-w-0 h-10 rounded-xl bg-card border border-border px-3 text-base font-bold"
-                  autoFocus
-                />
-                <button
-                  onClick={saveName}
-                  disabled={saving || !nameDraft.trim()}
-                  className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingName(false);
-                    setNameDraft(profile.full_name || "");
-                  }}
-                  disabled={saving}
-                  className="shrink-0 w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+        <div className="bg-card border border-border rounded-2xl p-5 mb-5">
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="w-[72px] h-[72px] rounded-full bg-primary/15 overflow-hidden flex items-center justify-center text-2xl font-bold text-primary">
+                {profile.profile_picture ? (
+                  <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
+                ) : (
+                  initial
+                )}
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold leading-tight tracking-tight">{displayName}</h1>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={saving}
+                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-90 transition-transform disabled:opacity-50"
+                aria-label="Change profile picture"
+              >
+                {saving && !editingName ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-4 h-4" />}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPicture} />
+            </div>
+            <div className="flex-1 min-w-0">
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveName()}
+                    placeholder="Your name"
+                    maxLength={50}
+                    className="flex-1 min-w-0 h-10 rounded-xl bg-background border border-border px-3 text-base font-bold"
+                    autoFocus
+                  />
+                  <button
+                    onClick={saveName}
+                    disabled={saving || !nameDraft.trim()}
+                    className="shrink-0 w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingName(false);
+                      setNameDraft(profile.full_name || "");
+                    }}
+                    disabled={saving}
+                    className="shrink-0 w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
                 <button
                   onClick={() => {
                     setEditingName(true);
                     setNameDraft(profile.full_name || "");
                   }}
-                  className="text-muted-foreground active:scale-90 transition-transform"
-                  aria-label="Edit name"
+                  className="flex items-center gap-2 active:scale-95 transition-transform"
                 >
-                  <Pencil className="w-4 h-4" />
+                  <h1 className="text-xl font-bold leading-tight tracking-tight text-left">{displayName}</h1>
+                  <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
                 </button>
-              </div>
-            )}
-            <div className="flex items-center gap-3 mt-2.5">
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground">
-                <Star className="w-4 h-4 fill-primary text-primary" />
-                Member
-              </span>
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
-                <BadgeCheck className="w-4 h-4" />
-                Verified
-              </span>
-            </div>
-          </div>
-          <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center text-xl font-bold text-primary">
-              {profile.profile_picture ? (
-                <Image src={profile.profile_picture} fittingType="fill" className="w-full h-full" alt="profile" />
-              ) : (
-                initial
+              )}
+              {profile.email && (
+                <p className="text-xs text-muted-foreground mt-1 truncate">{profile.email}</p>
               )}
             </div>
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={saving}
-              className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-90 transition-transform disabled:opacity-50"
-              aria-label="Change profile picture"
-            >
-              {saving && !editingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPicture} />
+          </div>
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+              <Star className="w-4 h-4 fill-primary text-primary" />
+              Member
+            </span>
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+              <BadgeCheck className="w-4 h-4" />
+              Verified
+            </span>
           </div>
         </div>
 
