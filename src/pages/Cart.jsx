@@ -115,6 +115,7 @@ function CartInner() {
       const order = await base44.entities.Order.create({
         restaurant_id: restaurantId,
         restaurant_name: restaurantName,
+        restaurant_owner_id: restaurant?.created_by_id || null,
         items: items.map((i) => ({
           menu_item_id: i.menu_item_id,
           name: i.name,
