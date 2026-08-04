@@ -28,8 +28,8 @@ export default async function(req) {
 
     const notifications = users.map((u) => ({
       user_id: u.id,
-      title: `${name} is nearby`,
-      body: `A food truck just parked at ${address}. Check out their feed and grab a bite!`,
+      title: `${name} just settled nearby`,
+      body: `A food truck parked at ${address}. Tap to see today's video menu and grab a bite!`,
       type: 'truck_nearby',
       link: `/restaurant/${restaurantId}`,
       read: false,

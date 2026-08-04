@@ -13,6 +13,7 @@ import CustomerLayout from "@/components/CustomerLayout";
 import { useLiteMode } from "@/lib/liteMode";
 import { computeCraveScore, REACTION_STAR } from "@/lib/craveScore";
 import RatingSummary from "@/components/RatingSummary";
+import NotificationsBell from "@/components/NotificationsBell";
 
 const FEED_SENTINEL = "__cravereel_feed__";
 
@@ -230,6 +231,7 @@ function FeedInner() {
 
   return (
     <CustomerLayout>
+      <NotificationsBell />
       {/* Header tabs */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-center gap-1 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 bg-gradient-to-b from-black/70 to-transparent">
         <button
