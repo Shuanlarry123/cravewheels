@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Send, X, Plus, Loader2, ShieldCheck, Lock, Share2 } from "lucide-react";
+import { Heart, MessageCircle, Send, X, Plus, Loader2, Share2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useOrderedItems } from "@/lib/useOrderedItems";
@@ -119,10 +119,6 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
 
   const submit = async () => {
     if (!user || !text.trim() || posting) return;
-    if (!canComment) {
-      toast.error("Only customers who ordered this dish can comment");
-      return;
-    }
     setPosting(true);
     try {
       const c = await base44.entities.Comment.create({
@@ -131,8 +127,8 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
         restaurant_id: item.restaurant_id,
         author_name: user.full_name || user.email,
         comment: text.trim(),
-        rating,
-        verified: true,
+        rating: canComment ? rating : 0,
+        verified: canComment,
       });
       setComments((cs) => [c, ...cs]);
       setText("");
@@ -189,7 +185,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
           >
             <div className="flex items-center justify-between p-3 border-b border-border">
               <span className="text-sm font-semibold flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-primary" /> Verified comments
+                <MessageCircle className="w-4 h-4 text-primary" /> Comments
               </span>
               <button onClick={() => setShowComments(false)}>
                 <X className="w-4 h-4 text-muted-foreground" />
@@ -198,42 +194,37 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
             <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
               {comments.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-6">
-                  No verified comments yet. Order this dish to be the first!
+                  No comments yet. Be the first to comment!
                 </p>
               ) : (
                 comments.map((c) => <VerifiedComment key={c.id} comment={c} orderInfo={orderInfoByUser} />)
               )}
             </div>
-            {canComment ? (
-              <div className="p-3 border-t border-border space-y-2">
+            <div className="p-3 border-t border-border space-y-2">
+              {canComment && (
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-muted-foreground">Your rating:</span>
                   <StarRating value={rating} onChange={setRating} size={16} />
                 </div>
-                <div className="flex gap-2">
-                  <input
-                    ref={inputRef}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && submit()}
-                    placeholder="Share your experience..."
-                    className="flex-1 h-10 rounded-full bg-background border border-border px-4 text-sm"
-                  />
-                  <button
-                    onClick={submit}
-                    disabled={posting || !text.trim()}
-                    className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 disabled:opacity-50"
-                  >
-                    {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submit()}
+                  placeholder={canComment ? "Share your experience..." : "Add a comment..."}
+                  className="flex-1 h-10 rounded-full bg-background border border-border px-4 text-sm"
+                />
+                <button
+                  onClick={submit}
+                  disabled={posting || !text.trim()}
+                  className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 disabled:opacity-50"
+                >
+                  {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
               </div>
-            ) : (
-              <div className="p-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
-                <Lock className="w-3.5 h-3.5 shrink-0" />
-                <span>Only customers who ordered this dish can comment.</span>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       )}
