@@ -12,7 +12,7 @@ export default async function(req) {
     const events = await base44.asServiceRole.entities.DispatchEvent.list('-created_date', 100).catch(() => []);
 
     const now = Date.now();
-    const STALE_MS = 60_000;
+    const STALE_MS = 120_000;
     const UNMATCHED_MS = 120_000;
 
     const recentUnmatched = new Set();

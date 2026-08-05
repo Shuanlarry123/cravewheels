@@ -39,6 +39,9 @@ export default function DriverDashboard() {
   const [rideRequest, setRideRequest] = useState(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const mapRef = useRef(null);
+  const offRouteSinceRef = useRef(null);
+  const offRouteLoggedRef = useRef(null);
+  const lastOffRouteOidRef = useRef(null);
   const activeOrders = orders.filter(
     (o) => user && o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
   );
@@ -143,9 +146,14 @@ export default function DriverDashboard() {
         const now = Date.now();
         if (now - lastPersistRef.current >= 6000) {
           lastPersistRef.current = now;
-          base44.entities.DriverProfile
-            .update(profile.id, { latitude: loc.lat, longitude: loc.lng, last_heartbeat: new Date().toISOString() })
-            .catch(() => {});
+          const payload = { latitude: loc.lat, longitude: loc.lng, last_heartbeat: new Date().toISOString() };
+          const queueLoc = () => {
+            try {
+              localStorage.setItem("crave_loc_queue", JSON.stringify({ lat: loc.lat, lng: loc.lng }));
+            } catch {}
+          };
+          if (!navigator.onLine) queueLoc();
+          else base44.entities.DriverProfile.update(profile.id, payload).catch(queueLoc);
         }
       },
       () => {},
@@ -174,6 +182,28 @@ export default function DriverDashboard() {
     const id = setInterval(tick, 15000);
     return () => clearInterval(id);
   }, [profile?.id, profile?.is_available]);
+
+  // Graceful degradation: flush queued location pings once connectivity returns,
+  // so a brief drop never freezes the rider's view or strands an active trip.
+  const flushQueue = useCallback(() => {
+    if (!profile?.id || !navigator.onLine) return;
+    try {
+      const raw = localStorage.getItem("crave_loc_queue");
+      if (!raw) return;
+      const { lat, lng } = JSON.parse(raw);
+      base44.entities.DriverProfile
+        .update(profile.id, { latitude: lat, longitude: lng, last_heartbeat: new Date().toISOString() })
+        .then(() => localStorage.removeItem("crave_loc_queue"))
+        .catch(() => {});
+    } catch {}
+  }, [profile?.id]);
+
+  useEffect(() => {
+    flushQueue();
+    const onOnline = () => flushQueue();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flushQueue]);
 
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {
@@ -241,6 +271,27 @@ export default function DriverDashboard() {
       toast.error("Failed to release ride");
     } finally {
       setBusy(false);
+    }
+  };
+
+  // Off-route deviation: sustained >250m off the route line alerts ops (once per trip)
+  const onDeviation = (distM) => {
+    const oid = currentStop?.order?.id;
+    if (!oid || !user?.id) return;
+    if (lastOffRouteOidRef.current !== oid) {
+      lastOffRouteOidRef.current = oid;
+      offRouteSinceRef.current = null;
+      offRouteLoggedRef.current = null;
+    }
+    if (offRouteLoggedRef.current === oid) return;
+    if (!offRouteSinceRef.current) offRouteSinceRef.current = Date.now();
+    if (Date.now() - offRouteSinceRef.current >= 8000) {
+      offRouteLoggedRef.current = oid;
+      base44.entities.DispatchEvent.create({
+        order_id: oid, actor_id: user.id, from_state: "in_trip", to_state: "off_route",
+        detail: `Driver deviated ~${distM}m off route`, severity: "warning",
+      }).catch(() => {});
+      toast("You're off route — dispatch notified");
     }
   };
 
@@ -364,6 +415,7 @@ export default function DriverDashboard() {
               stops={stops}
               onRouteInfo={setRouteInfo}
               onProgress={setProgress}
+              onDeviation={onDeviation}
               follow={inDelivery}
             />
           ) : (

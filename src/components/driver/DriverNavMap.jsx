@@ -52,7 +52,7 @@ function makeStopEl(num, type) {
 }
 
 const DriverNavMap = forwardRef(function DriverNavMap(
-  { token, driverLng, driverLat, stops, onRouteInfo, onProgress, follow },
+  { token, driverLng, driverLat, stops, onRouteInfo, onProgress, onDeviation, follow },
   ref
 ) {
   const containerRef = useRef(null);
@@ -76,6 +76,10 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const arrivedRef = useRef(false);
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
+
+  const onDeviationRef = useRef(onDeviation);
+  onDeviationRef.current = onDeviation;
+  const lastDevEmitRef = useRef(0);
 
   const [showRecenter, setShowRecenter] = useState(false);
   const [arrived, setArrived] = useState(false);
@@ -165,6 +169,10 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     }
 
     const proj = projectOnRoute(data.features, disp.lng, disp.lat);
+    if (proj.dist > 250 && Date.now() - lastDevEmitRef.current > 10000) {
+      lastDevEmitRef.current = Date.now();
+      onDeviationRef.current?.(Math.round(proj.dist));
+    }
     const { traveledCoords, remainingFeatures } = splitRoute(data.features, proj);
     if (remainingSrcRef.current)
       remainingSrcRef.current.setData({ type: "FeatureCollection", features: remainingFeatures });
