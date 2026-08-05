@@ -197,7 +197,12 @@ export default function AdminDispatchMap({ data }) {
       routeSourceRef.current = map.getSource("routes");
     });
     mapRef.current = map;
+    const ro = new ResizeObserver(() => {
+      mapRef.current?.resize();
+    });
+    ro.observe(containerRef.current);
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
       driverMarkersRef.current = {};
