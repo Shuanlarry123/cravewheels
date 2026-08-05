@@ -236,19 +236,6 @@ function ProfileInner() {
           </div>
         )}
 
-        {/* Creator feed upload */}
-        {creatorProfile && (
-          <div className="mt-6">
-            <PostFeed
-              authorType="creator"
-              authorId={user?.id}
-              authorName={profile.full_name || profile.email || "Creator"}
-              authorAvatarUrl={profile.profile_picture}
-              title="My Feed"
-            />
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="mt-6 flex border-b border-border">
           {TABS.map(({ id, label, icon: Icon }) => (
@@ -336,6 +323,19 @@ function ProfileInner() {
               <p className="text-center text-sm text-muted-foreground py-10">No comments yet. Comment on any video from the feed.</p>
             ))}
         </div>
+
+        {/* Creator feed upload */}
+        {creatorProfile && (
+          <div className="mt-6">
+            <PostFeed
+              authorType="creator"
+              authorId={user?.id}
+              authorName={profile.full_name || profile.email || "Creator"}
+              authorAvatarUrl={profile.profile_picture}
+              title="My Feed"
+            />
+          </div>
+        )}
 
       </div>
     </CustomerLayout>
