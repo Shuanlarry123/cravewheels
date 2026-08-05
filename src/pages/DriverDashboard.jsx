@@ -37,6 +37,7 @@ export default function DriverDashboard() {
   const [sheetView, setSheetView] = useState("orders");
   const [proof, setProof] = useState(null);
   const [rideRequest, setRideRequest] = useState(null);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const mapRef = useRef(null);
   const offRouteSinceRef = useRef(null);
@@ -79,6 +80,12 @@ export default function DriverDashboard() {
         setUser(u);
         await loadProfile(u);
         await loadOrders(u);
+        const notifs = await base44.entities.Notification.filter({ read: false });
+        const mineReqs = notifs.filter((n) => n.user_id === u.id && n.type === "ride_request");
+        if (mineReqs.length) {
+          setPendingRequests(mineReqs);
+          setRideRequest((cur) => cur || mineReqs[mineReqs.length - 1]);
+        }
         const t = await base44.functions.invoke("getMapboxToken", {});
         setToken(t.data?.token || null);
         getUserLocation().then(setLocation);
@@ -88,8 +95,13 @@ export default function DriverDashboard() {
         setLoading(false);
       }
     })();
-    const unsub = base44.entities.Order.subscribe(() => {
+    const unsub = base44.entities.Order.subscribe((event) => {
       if (u) loadOrders(u);
+      const o = event.data;
+      if (o && o.driver_id && o.driver_id !== u?.id) {
+        setPendingRequests((prev) => prev.filter((r) => r.order_id !== o.id));
+        setRideRequest((cur) => (cur && cur.order_id === o.id ? null : cur));
+      }
     });
     return unsub;
   }, []);
@@ -102,7 +114,8 @@ export default function DriverDashboard() {
       const n = event.data;
       if (!n || n.user_id !== user.id) return;
       if (n.type === "ride_request") {
-        setRideRequest(n);
+        setPendingRequests((prev) => (prev.some((r) => r.id === n.id) ? prev : [...prev, n]));
+        setRideRequest((cur) => cur || n);
         return;
       }
       if (n.type !== "order_assigned") return;
@@ -230,13 +243,21 @@ export default function DriverDashboard() {
     }
   };
 
-  const closeRideRequest = (notifId) => {
+  const dismissActive = () => setRideRequest(null);
+
+  const declineRequest = (notifId) => {
     if (notifId) base44.entities.Notification.update(notifId, { read: true }).catch(() => {});
+    setPendingRequests((prev) => prev.filter((r) => r.id !== notifId));
     setRideRequest(null);
   };
 
   const handleRideAccepted = (order) => {
     toast.success("Ride accepted");
+    setPendingRequests((prev) => {
+      const match = prev.find((r) => r.order_id === order.id);
+      if (match) base44.entities.Notification.update(match.id, { read: true }).catch(() => {});
+      return prev.filter((r) => r.order_id !== order.id);
+    });
     setRideRequest(null);
     loadOrders(user);
     setProfile((p) => (p ? { ...p, availability_status: "en_route" } : p));
@@ -560,12 +581,26 @@ export default function DriverDashboard() {
         {proof?.type === "dropoff" && (
           <DeliveryProof order={proof.order} onClose={() => setProof(null)} onConfirm={confirmDelivery} busy={busy} />
         )}
+        {!rideRequest && pendingRequests.length > 0 && (
+          <button
+            onClick={() => setRideRequest(pendingRequests[pendingRequests.length - 1])}
+            className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary text-primary-foreground pl-2 pr-4 py-2 rounded-full shadow-lg active:scale-95 transition-transform"
+          >
+            <span className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center text-xs font-bold">
+              {pendingRequests.length}
+            </span>
+            <span className="text-sm font-semibold">
+              Open ride request{pendingRequests.length > 1 ? "s" : ""}
+            </span>
+          </button>
+        )}
         {rideRequest && (
           <RideRequestCard
             request={rideRequest}
             driverLocation={location}
             onAccepted={handleRideAccepted}
-            onClose={closeRideRequest}
+            onClose={dismissActive}
+            onDecline={declineRequest}
           />
         )}
       </div>

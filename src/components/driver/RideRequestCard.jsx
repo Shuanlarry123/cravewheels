@@ -5,7 +5,7 @@ import { haversineKm } from "@/lib/distance";
 
 const COUNTDOWN = 15;
 
-export default function RideRequestCard({ request, driverLocation, onAccepted, onClose }) {
+export default function RideRequestCard({ request, driverLocation, onAccepted, onClose, onDecline }) {
   const [order, setOrder] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -218,7 +218,7 @@ export default function RideRequestCard({ request, driverLocation, onAccepted, o
               {/* Actions */}
               <div className="flex gap-3 pt-1">
                 <button
-                  onClick={() => onClose?.(request.id)}
+                  onClick={() => onDecline?.(request.id)}
                   disabled={accepting}
                   className="flex-1 h-13 py-3.5 rounded-2xl bg-secondary text-secondary-foreground font-semibold disabled:opacity-50"
                 >
