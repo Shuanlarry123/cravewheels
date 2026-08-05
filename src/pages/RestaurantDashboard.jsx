@@ -81,7 +81,13 @@ export default function RestaurantDashboard() {
     if (!next) return;
     setBusy(true);
     try {
-      await base44.entities.Order.update(order.id, { status: next });
+      await base44.entities.Order.update(order.id, { status: next, state_changed_at: new Date().toISOString() });
+      // Dispatch a driver only after the restaurant confirms the order, so the
+      // order stays visible to the restaurant (pending → confirmed) before it
+      // enters driver-matching.
+      if (next === "confirmed") {
+        base44.functions.invoke("dispatchRideRequest", { order_id: order.id, model: "broadcast" }).catch(() => {});
+      }
       toast.success("Order updated");
       await loadOrders(restaurant.id);
     } catch {

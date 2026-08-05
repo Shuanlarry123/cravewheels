@@ -7,7 +7,7 @@ const FLOW = {
 };
 
 export default function RestaurantOrders({ orders, onAdvance, busy }) {
-  const active = orders.filter((o) => ["pending", "confirmed", "preparing"].includes(o.status));
+  const active = orders.filter((o) => ["pending", "confirmed", "matching", "preparing"].includes(o.status));
 
   return (
     <div>
