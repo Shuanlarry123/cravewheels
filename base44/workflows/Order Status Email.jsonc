@@ -1,0 +1,37 @@
+{
+  "name": "Order Status Email",
+  "description": "Emails the customer via Gmail when an order transitions to confirmed (restaurant preparing) or picked_up (out for delivery).",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Order",
+      "events": [
+        "update"
+      ]
+    },
+    "condition": "${ (.trigger.data.status == \"confirmed\" or .trigger.data.status == \"picked_up\") and .trigger.old_data.status != .trigger.data.status }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "order_status_email",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendOrderGmailNotification",
+            "args": {
+              "order_id": "${ .trigger.entity_id }",
+              "status": "${ .trigger.data.status }"
+            }
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}
