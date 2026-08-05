@@ -337,17 +337,6 @@ function ProfileInner() {
             ))}
         </div>
 
-        {/* Footer links */}
-        <div className="mt-8 space-y-2">
-          {isAdmin && (
-            <Link to="/admin-dashboard" className="flex items-center gap-3 bg-primary/15 border border-primary/30 rounded-2xl p-3.5 active:scale-[0.99] transition-transform">
-              <Shield className="w-5 h-5 text-primary" />
-              <span className="flex-1 font-medium text-sm">Admin Dashboard</span>
-              <ChevronRight className="w-4 h-4 text-primary" />
-            </Link>
-          )}
-
-        </div>
       </div>
     </CustomerLayout>
   );
