@@ -13,7 +13,10 @@ import {
   Layers,
   CreditCard,
   Radar,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminMapSection from "@/components/admin/AdminMapSection";
@@ -41,6 +44,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [busyOrderId, setBusyOrderId] = useState(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   const load = useCallback(async () => {
     const [r, d, c, o] = await Promise.all([
@@ -293,12 +297,31 @@ export default function AdminDashboard() {
             </div>
           ) : section === "dispatch" ? (
             <div className="h-full flex flex-col md:flex-row">
-              <div className="h-1/2 md:h-full md:flex-1 min-h-0">
+              <div className={cn("min-h-0", panelCollapsed ? "h-full md:flex-1" : "h-1/2 md:h-full md:flex-1")}>
                 <AdminDispatchMap data={data} />
               </div>
-              <div className="h-1/2 md:h-full md:w-[440px] md:border-l border-border min-h-0">
-                <DispatchOpsPanel data={data} />
-              </div>
+              {panelCollapsed ? (
+                <button
+                  onClick={() => setPanelCollapsed(false)}
+                  className="flex items-center gap-2 px-4 h-12 border-t border-border bg-background active:scale-[0.99] transition-transform"
+                >
+                  <Radar className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-bold">Dispatch Ops</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-1">
+                    Expand panel <ChevronUp className="w-4 h-4" />
+                  </span>
+                </button>
+              ) : (
+                <div className="h-1/2 md:h-full md:w-[440px] md:border-l border-border min-h-0 relative">
+                  <button
+                    onClick={() => setPanelCollapsed(true)}
+                    className="absolute top-2 right-3 z-10 h-7 px-2.5 rounded-lg bg-card border border-border text-[11px] font-semibold text-muted-foreground flex items-center gap-1 active:scale-95"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" /> Minimize
+                  </button>
+                  <DispatchOpsPanel data={data} />
+                </div>
+              )}
             </div>
           ) : (
             <main className="h-full overflow-y-auto p-4 md:p-6">
