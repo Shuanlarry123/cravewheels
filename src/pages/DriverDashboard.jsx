@@ -11,12 +11,12 @@ import DirectionsBanner from "@/components/driver/DirectionsBanner";
 import StepsList from "@/components/driver/StepsList";
 import OpenInMaps from "@/components/driver/OpenInMaps";
 import CollapsibleSheet from "@/components/driver/CollapsibleSheet";
-import MapboxMap from "@/components/MapboxMap";
+import DriverNavMap from "@/components/driver/DriverNavMap";
 import { buildStops } from "@/lib/routeOptimizer";
 import StopList from "@/components/driver/StopList";
 import PickupProof from "@/components/driver/PickupProof";
 import DeliveryProof from "@/components/driver/DeliveryProof";
-import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, LocateFixed, Volume2, VolumeX } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVoiceNav } from "@/lib/useVoiceNav";
 import { toast } from "react-hot-toast";
@@ -31,11 +31,16 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [progress, setProgress] = useState(null);
   const [showSteps, setShowSteps] = useState(false);
   const [sheetView, setSheetView] = useState("orders");
   const [proof, setProof] = useState(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const mapRef = useRef(null);
+  const activeOrders = orders.filter(
+    (o) => user && o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
+  );
+  const inDelivery = activeOrders.length > 0;
 
   const loadProfile = useCallback(async (u) => {
     const profs = await base44.entities.DriverProfile.filter({});
@@ -137,10 +142,12 @@ export default function DriverDashboard() {
         }
       },
       () => {},
-      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+      inDelivery
+        ? { enableHighAccuracy: true, maximumAge: 1500, timeout: 8000 }
+        : { enableHighAccuracy: false, maximumAge: 15000, timeout: 20000 }
     );
     return () => navigator.geolocation.clearWatch(watch);
-  }, [profile?.id]);
+  }, [profile?.id, inDelivery]);
 
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {
@@ -221,10 +228,6 @@ export default function DriverDashboard() {
     }
   };
 
-  const activeOrders = orders.filter(
-    (o) => user && o.driver_id === user.id && ["confirmed", "preparing", "picked_up"].includes(o.status)
-  );
-  const inDelivery = activeOrders.length > 0;
   useVoiceNav({ routeInfo, enabled: voiceEnabled && inDelivery });
   const stops = location ? buildStops(location.lat, location.lng, activeOrders, restaurants) : [];
 
@@ -268,13 +271,14 @@ export default function DriverDashboard() {
         {/* Full-screen map */}
         <div className="absolute inset-0">
           {token ? (
-            <MapboxMap
+            <DriverNavMap
               ref={mapRef}
               token={token}
               driverLng={location?.lng}
               driverLat={location?.lat}
               stops={stops}
               onRouteInfo={setRouteInfo}
+              onProgress={setProgress}
               follow={inDelivery}
             />
           ) : (
@@ -282,13 +286,6 @@ export default function DriverDashboard() {
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           )}
-          <button
-            onClick={() => mapRef.current?.recenter()}
-            className="absolute right-3 bottom-28 z-10 w-10 h-10 rounded-full bg-card/95 backdrop-blur border border-border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
-            aria-label="Recenter map"
-          >
-            <LocateFixed className="w-5 h-5 text-primary" />
-          </button>
           <button
             onClick={() => setVoiceEnabled((v) => !v)}
             className={`absolute right-3 bottom-40 z-10 w-10 h-10 rounded-full backdrop-blur border shadow-lg flex items-center justify-center active:scale-95 transition-transform ${
@@ -305,7 +302,7 @@ export default function DriverDashboard() {
         {/* Top floating stats + directions banner */}
         <div className="absolute top-0 inset-x-0 pt-[calc(env(safe-area-inset-top)+0.75rem)] px-3 pb-8 z-10 bg-gradient-to-b from-background/85 to-transparent space-y-2">
           <DriverStats statsOnly profile={profile} />
-          {inDelivery && stops.length > 0 && <DirectionsBanner routeInfo={routeInfo} />}
+          {inDelivery && stops.length > 0 && <DirectionsBanner routeInfo={progress || routeInfo} />}
         </div>
 
         {/* Collapsible bottom sheet — drag the handle down to reveal the full map */}
