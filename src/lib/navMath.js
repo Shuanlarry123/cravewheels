@@ -180,3 +180,44 @@ export async function mapMatch(token, points) {
     return null;
   }
 }
+
+/**
+ * Mapbox Matrix API — driving-time/distance table between every pair of coords.
+ * Returns { durations, distances } (2D arrays, seconds / meters) or null.
+ * Index 0 corresponds to coords[0]. Max 25 coordinates per call.
+ */
+export async function fetchMatrix(token, coords, profile = "driving") {
+  if (!token || !coords || coords.length < 2) return null;
+  try {
+    const path = coords.map((c) => `${c[0]},${c[1]}`).join(";");
+    const url =
+      `https://api.mapbox.com/directions-matrix/v1/mapbox/${profile}/${path}` +
+      `?annotations=duration,distance&access_token=${token}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.durations) return null;
+    return { durations: data.durations, distances: data.distances || null };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Mapbox Isochrone API — area reachable from a point within `minutes` by car.
+ * Returns an array of GeoJSON Polygon features (contour rings) or null.
+ */
+export async function fetchIsochrone(token, { lng, lat, minutes = 10, profile = "driving" }) {
+  if (token == null || lng == null || lat == null) return null;
+  try {
+    const url =
+      `https://api.mapbox.com/isochrone/v1/mapbox/${profile}/${lng},${lat}` +
+      `?contours_minutes=${minutes}&polygons=true&denoise=0.4&generalize=50&access_token=${token}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.features || [];
+  } catch {
+    return null;
+  }
+}

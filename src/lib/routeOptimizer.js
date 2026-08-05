@@ -1,4 +1,5 @@
 import { haversineKm } from "@/lib/distance";
+import { fetchMatrix } from "@/lib/navMath";
 
 /**
  * Build an optimized, ordered list of stops for a driver's active orders.
@@ -84,4 +85,68 @@ export function buildStops(driverLat, driverLng, activeOrders, restaurants) {
   }
 
   return stops;
+}
+
+/**
+ * Matrix-optimized variant of buildStops: reorders the greedy sequence using
+ * real driving times from the Mapbox Matrix API (when a token is available),
+ * still respecting the pickup-before-dropoff constraint. Falls back to the
+ * haversine-based greedy order if the matrix call fails or there are <=2 stops.
+ */
+export async function buildStopsOptimized(driverLat, driverLng, activeOrders, restaurants, token) {
+  const base = buildStops(driverLat, driverLng, activeOrders, restaurants);
+  if (!token || base.length <= 2) return base;
+
+  const coords = [[driverLng, driverLat], ...base.map((s) => [s.lng, s.lat])];
+  const matrix = await fetchMatrix(token, coords, "driving");
+  if (!matrix?.durations) return base;
+  const dur = matrix.durations;
+
+  const pickedOrders = new Set(
+    (activeOrders || [])
+      .filter((o) => o.status === "picked_up" || o.pickup_confirmed)
+      .map((o) => o.id)
+  );
+
+  const remaining = base.map((s, i) => ({ ...s, mi: i + 1 }));
+  const ordered = [];
+  let cur = 0; // matrix index of the driver's current position
+  while (remaining.length) {
+    let best = null;
+    let bestDur = Infinity;
+    remaining.forEach((s) => {
+      if (s.type === "dropoff" && !pickedOrders.has(s.order.id)) return;
+      const t = dur[cur]?.[s.mi];
+      if (t == null || t < 0) return;
+      if (t < bestDur) {
+        bestDur = t;
+        best = s;
+      }
+    });
+    // No eligible drop-offs yet → fall back to nearest stop by driving time.
+    if (!best) {
+      remaining.forEach((s) => {
+        const t = dur[cur]?.[s.mi];
+        const d = t == null || t < 0 ? Infinity : t;
+        if (d < bestDur) {
+          bestDur = d;
+          best = s;
+        }
+      });
+    }
+    if (!best) break;
+    ordered.push(best);
+    cur = best.mi;
+    remaining.splice(remaining.indexOf(best), 1);
+    if (best.type === "pickup") pickedOrders.add(best.order.id);
+  }
+
+  // Append any stops the optimizer couldn't place, in their original order.
+  if (ordered.length < base.length) {
+    const placed = new Set(ordered.map((s) => s.mi));
+    base.forEach((s, i) => {
+      if (!placed.has(i + 1)) ordered.push(s);
+    });
+  }
+  return ordered;
 }

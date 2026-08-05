@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { add3DBuildings, addSky, setWarmLight } from "@/lib/mapEnhancements";
+import { fetchIsochrone } from "@/lib/navMath";
 
 // Connecticut centroid — used as the default map focus and geolocation fallback.
 const CT_CENTER = { lng: -72.7, lat: 41.5 };
@@ -110,6 +111,38 @@ export default function MapboxExploreMap({ token, restaurants, focusId, onSelect
     const r = restaurants.find((x) => x.id === focusId);
     if (r) map.flyTo({ center: [r.longitude, r.latitude], zoom: 15, essential: true });
   }, [focusId]);
+
+  // isochrone: delivery reach for the focused restaurant (reachable within 10 min by car)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (map.getLayer("isochrone-fill")) map.removeLayer("isochrone-fill");
+    if (map.getLayer("isochrone-line")) map.removeLayer("isochrone-line");
+    if (map.getSource("isochrone")) map.removeSource("isochrone");
+    if (!token || !focusId) return;
+    const r = restaurants.find((x) => x.id === focusId);
+    if (!r || r.longitude == null || r.latitude == null) return;
+    let alive = true;
+    fetchIsochrone(token, { lng: r.longitude, lat: r.latitude, minutes: 10 }).then((feats) => {
+      if (!alive || !map || !feats?.length || map.getSource("isochrone")) return;
+      map.addSource("isochrone", { type: "geojson", data: { type: "FeatureCollection", features: feats } });
+      map.addLayer({
+        id: "isochrone-fill",
+        type: "fill",
+        source: "isochrone",
+        paint: { "fill-color": "#FF6B2C", "fill-opacity": 0.12 },
+      });
+      map.addLayer({
+        id: "isochrone-line",
+        type: "line",
+        source: "isochrone",
+        paint: { "line-color": "#FF6B2C", "line-width": 2, "line-opacity": 0.7 },
+      });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [focusId, token, restaurants]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

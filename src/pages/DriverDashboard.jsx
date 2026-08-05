@@ -12,7 +12,7 @@ import StepsList from "@/components/driver/StepsList";
 import OpenInMaps from "@/components/driver/OpenInMaps";
 import CollapsibleSheet from "@/components/driver/CollapsibleSheet";
 import DriverNavMap from "@/components/driver/DriverNavMap";
-import { buildStops } from "@/lib/routeOptimizer";
+import { buildStops, buildStopsOptimized } from "@/lib/routeOptimizer";
 import StopList from "@/components/driver/StopList";
 import PickupProof from "@/components/driver/PickupProof";
 import DeliveryProof from "@/components/driver/DeliveryProof";
@@ -365,7 +365,27 @@ export default function DriverDashboard() {
   };
 
   useVoiceNav({ routeInfo, enabled: voiceEnabled && inDelivery });
-  const stops = location ? buildStops(location.lat, location.lng, activeOrders, restaurants) : [];
+  const [stops, setStops] = useState([]);
+  const activeKey = activeOrders.map((o) => `${o.id}:${o.status}:${o.pickup_confirmed ? 1 : 0}`).join("|");
+  useEffect(() => {
+    if (!location || !activeOrders.length) {
+      setStops([]);
+      return;
+    }
+    let alive = true;
+    // Immediate haversine-based order so the UI never waits on the matrix call.
+    setStops(buildStops(location.lat, location.lng, activeOrders, restaurants));
+    if (token) {
+      buildStopsOptimized(location.lat, location.lng, activeOrders, restaurants, token)
+        .then((opt) => {
+          if (alive && opt) setStops(opt);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      alive = false;
+    };
+  }, [location?.lat, location?.lng, activeKey, restaurants, token]);
 
   if (loading) {
     return (

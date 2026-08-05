@@ -8,6 +8,7 @@ export default function AddressAutocomplete({ value, onChange, onPick, placehold
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [prox, setProx] = useState(null);
   const timer = useRef(null);
 
   useEffect(() => {
@@ -15,6 +16,16 @@ export default function AddressAutocomplete({ value, onChange, onPick, placehold
       .invoke("getMapboxToken", {})
       .then((r) => setToken(r.data?.token || null))
       .catch(() => {});
+  }, []);
+
+  // Bias geocoding results toward the user's current location for relevance.
+  useEffect(() => {
+    if (!navigator.geolocation?.getCurrentPosition) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setProx(`${p.coords.longitude.toFixed(4)},${p.coords.latitude.toFixed(4)}`),
+      () => {},
+      { timeout: 4000, maximumAge: 300000 }
+    );
   }, []);
 
   useEffect(() => {
@@ -32,7 +43,7 @@ export default function AddressAutocomplete({ value, onChange, onPick, placehold
       try {
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
           q
-        )}.json?access_token=${token}&autocomplete=true&limit=5`;
+        )}.json?access_token=${token}&autocomplete=true&limit=5${prox ? `&proximity=${prox}` : ""}`;
         const res = await fetch(url);
         const data = await res.json();
         setResults(data.features || []);
@@ -44,7 +55,7 @@ export default function AddressAutocomplete({ value, onChange, onPick, placehold
       }
     }, 300);
     return () => clearTimeout(timer.current);
-  }, [q, token]);
+  }, [q, token, prox]);
 
   const pick = (feat) => {
     const label = feat.place_name;
