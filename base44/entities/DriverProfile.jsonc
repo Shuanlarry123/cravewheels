@@ -23,6 +23,29 @@
       "type": "boolean",
       "default": false
     },
+    "availability_status": {
+      "type": "string",
+      "enum": [
+        "offline",
+        "online_idle",
+        "en_route",
+        "arrived",
+        "in_trip"
+      ],
+      "default": "offline"
+    },
+    "offers_received": {
+      "type": "number",
+      "default": 0
+    },
+    "offers_accepted": {
+      "type": "number",
+      "default": 0
+    },
+    "last_heartbeat": {
+      "type": "string",
+      "format": "date-time"
+    },
     "total_earnings": {
       "type": "number",
       "default": 0

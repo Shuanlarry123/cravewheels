@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Check, Truck, Store, MessageCircle, Clock, MapPin, Star, Phone } from "lucide-react";
+import { ArrowLeft, Check, Truck, Store, MessageCircle, Clock, MapPin, Star, Phone, Navigation } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { add3DBuildings, addSky, setWarmLight, makeTrafficLightEl, makeAnimatedDriverEl } from "@/lib/mapEnhancements";
+import { haversineKm } from "@/lib/distance";
 import { toast } from "react-hot-toast";
 
 const STEPS = ["pending", "confirmed", "preparing", "picked_up", "delivered"];
@@ -37,6 +38,15 @@ export default function OrderTracking() {
   const [order, setOrder] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
   const [driver, setDriver] = useState(null);
+
+  const fetchDriver = async (driverUserId) => {
+    try {
+      const profs = await base44.entities.DriverProfile.filter({ created_by_id: driverUserId }, "-created_date", 1);
+      setDriver(profs?.[0] || null);
+    } catch {
+      setDriver(null);
+    }
+  };
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef(null);
@@ -53,7 +63,7 @@ export default function OrderTracking() {
         const o = await base44.entities.Order.get(id);
         setOrder(o);
         if (o.restaurant_id) base44.entities.Restaurant.get(o.restaurant_id).then(setRestaurant).catch(() => {});
-        if (o.driver_id) base44.entities.DriverProfile.get(o.driver_id).then(setDriver).catch(() => {});
+        if (o.driver_id) fetchDriver(o.driver_id);
         const t = await base44.functions.invoke("getMapboxToken", {});
         setToken(t.data?.token || null);
       } finally {
@@ -64,7 +74,7 @@ export default function OrderTracking() {
       if (event.data?.id === id) {
         base44.entities.Order.get(id).then((o) => {
           setOrder(o);
-          if (o.driver_id) base44.entities.DriverProfile.get(o.driver_id).then(setDriver).catch(() => {});
+          if (o.driver_id) fetchDriver(o.driver_id);
         }).catch(() => {});
       }
     });
@@ -75,8 +85,8 @@ export default function OrderTracking() {
   useEffect(() => {
     if (!order?.driver_id) return;
     const unsub = base44.entities.DriverProfile.subscribe((event) => {
-      if (event.data?.id === order.driver_id) {
-        base44.entities.DriverProfile.get(order.driver_id).then(setDriver).catch(() => {});
+      if (event.data?.created_by_id === order.driver_id) {
+        fetchDriver(order.driver_id);
       }
     });
     return () => unsub();
@@ -207,6 +217,21 @@ export default function OrderTracking() {
   const currentStep = STEPS.indexOf(order.status);
   const isPickup = order.order_type === "pickup";
 
+  let etaLabel = "";
+  if (driver && driver.latitude != null) {
+    const toDropoff = order.status === "picked_up";
+    const tLat = toDropoff ? order.latitude : restaurant?.latitude;
+    const tLng = toDropoff ? order.longitude : restaurant?.longitude;
+    if (tLat != null && tLng != null) {
+      const km = haversineKm(driver.latitude, driver.longitude, tLat, tLng);
+      if (km != null) {
+        const etaMin = Math.max(1, Math.round(km * 2.5 + 2));
+        const mi = (km * 0.621371).toFixed(1);
+        etaLabel = toDropoff ? `Arriving in ${etaMin} min · ${mi} mi away` : `Pickup in ${etaMin} min · ${mi} mi away`;
+      }
+    }
+  }
+
   return (
     <div className="min-h-[100dvh] bg-background pb-24">
       <div className="flex items-center gap-3 px-4 pt-6 pb-4">
@@ -255,12 +280,18 @@ export default function OrderTracking() {
         {/* Driver info */}
         {order.driver_id && driver && (
           <div className="bg-card border border-border rounded-2xl p-4 mb-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-lg">🛵</div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold capitalize">{driver.vehicle_type} driver</p>
+            <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center text-xl shrink-0">🛵</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{driver.legal_full_name || "Your driver"}</p>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Star className="w-3 h-3 fill-primary text-primary" /> {(driver.rating || 5).toFixed(1)} · {driver.total_deliveries || 0} trips
               </p>
+              <p className="text-xs text-muted-foreground truncate capitalize">
+                {[driver.vehicle_make, driver.vehicle_model].filter(Boolean).join(" ") || `${driver.vehicle_type || "vehicle"}`}
+                {driver.vehicle_color ? ` · ${driver.vehicle_color}` : ""}
+                {driver.vehicle_year ? ` ${driver.vehicle_year}` : ""}
+              </p>
+              {etaLabel && <p className="text-xs text-primary mt-0.5 flex items-center gap-1"><Navigation className="w-3 h-3" /> {etaLabel}</p>}
             </div>
             <div className="flex gap-2">
               {driver.phone ? (

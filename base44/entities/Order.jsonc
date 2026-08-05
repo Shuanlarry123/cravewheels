@@ -18,6 +18,7 @@
       "type": "string",
       "enum": [
         "pending",
+        "matching",
         "confirmed",
         "preparing",
         "picked_up",

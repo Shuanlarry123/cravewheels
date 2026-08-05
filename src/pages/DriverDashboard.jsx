@@ -16,6 +16,7 @@ import { buildStops } from "@/lib/routeOptimizer";
 import StopList from "@/components/driver/StopList";
 import PickupProof from "@/components/driver/PickupProof";
 import DeliveryProof from "@/components/driver/DeliveryProof";
+import RideRequestCard from "@/components/driver/RideRequestCard";
 import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVoiceNav } from "@/lib/useVoiceNav";
@@ -35,6 +36,7 @@ export default function DriverDashboard() {
   const [showSteps, setShowSteps] = useState(false);
   const [sheetView, setSheetView] = useState("orders");
   const [proof, setProof] = useState(null);
+  const [rideRequest, setRideRequest] = useState(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const mapRef = useRef(null);
   const activeOrders = orders.filter(
@@ -95,7 +97,12 @@ export default function DriverDashboard() {
     const unsub = base44.entities.Notification.subscribe((event) => {
       if (event.type !== "create") return;
       const n = event.data;
-      if (!n || n.user_id !== user.id || n.type !== "order_assigned") return;
+      if (!n || n.user_id !== user.id) return;
+      if (n.type === "ride_request") {
+        setRideRequest(n);
+        return;
+      }
+      if (n.type !== "order_assigned") return;
       toast(
         (t) => (
           <div className="flex items-center gap-3 pr-1">
@@ -149,6 +156,15 @@ export default function DriverDashboard() {
     return () => navigator.geolocation.clearWatch(watch);
   }, [profile?.id, inDelivery]);
 
+  // Bootstrap idle state for online drivers created before the dispatch state machine
+  useEffect(() => {
+    if (!profile?.id || !profile.is_available) return;
+    if (!profile.availability_status) {
+      base44.entities.DriverProfile.update(profile.id, { availability_status: "online_idle" }).catch(() => {});
+      setProfile((p) => (p ? { ...p, availability_status: "online_idle" } : p));
+    }
+  }, [profile?.id, profile?.is_available, profile?.availability_status]);
+
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {
       toast.error("Your account is pending approval");
@@ -173,6 +189,18 @@ export default function DriverDashboard() {
     }
   };
 
+  const closeRideRequest = (notifId) => {
+    if (notifId) base44.entities.Notification.update(notifId, { read: true }).catch(() => {});
+    setRideRequest(null);
+  };
+
+  const handleRideAccepted = (order) => {
+    toast.success("Ride accepted");
+    setRideRequest(null);
+    loadOrders(user);
+    setProfile((p) => (p ? { ...p, availability_status: "en_route" } : p));
+  };
+
   const confirmPickup = async (order, code) => {
     if (code !== order.pickup_code) {
       toast.error("Incorrect pickup code");
@@ -185,6 +213,14 @@ export default function DriverDashboard() {
         pickup_confirmed: true,
         pickup_confirmed_at: new Date().toISOString(),
       });
+      if (profile?.id) {
+        base44.entities.DriverProfile.update(profile.id, { availability_status: "in_trip" }).catch(() => {});
+        base44.entities.DispatchEvent.create({
+          order_id: order.id, actor_id: user.id, from_state: "en_route", to_state: "in_trip",
+          detail: "Pickup confirmed", severity: "info",
+        }).catch(() => {});
+      }
+      setProfile((p) => (p ? { ...p, availability_status: "in_trip" } : p));
       toast.success("Pickup confirmed");
       setProof(null);
       await loadOrders(user);
@@ -210,11 +246,17 @@ export default function DriverDashboard() {
       await base44.entities.DriverProfile.update(profile.id, {
         total_deliveries: (profile.total_deliveries || 0) + 1,
         total_earnings: (profile.total_earnings || 0) + (order.delivery_fee || 2.99),
+        availability_status: "online_idle",
       });
+      base44.entities.DispatchEvent.create({
+        order_id: order.id, actor_id: user.id, from_state: "in_trip", to_state: "completed",
+        detail: "Delivery complete", severity: "info",
+      }).catch(() => {});
       setProfile((p) => ({
         ...p,
         total_deliveries: (p.total_deliveries || 0) + 1,
         total_earnings: (p.total_earnings || 0) + (order.delivery_fee || 2.99),
+        availability_status: "online_idle",
       }));
       toast.success("Delivery complete!");
       setRouteInfo(null);
@@ -388,6 +430,14 @@ export default function DriverDashboard() {
         )}
         {proof?.type === "dropoff" && (
           <DeliveryProof order={proof.order} onClose={() => setProof(null)} onConfirm={confirmDelivery} busy={busy} />
+        )}
+        {rideRequest && (
+          <RideRequestCard
+            request={rideRequest}
+            driverLocation={location}
+            onAccepted={handleRideAccepted}
+            onClose={closeRideRequest}
+          />
         )}
       </div>
     </DriverLayout>

@@ -142,6 +142,7 @@ function CartInner() {
         promo_code: promo?.code || null,
         discount_amount: discount,
       });
+      base44.functions.invoke("dispatchRideRequest", { order_id: order.id, model: "broadcast" }).catch(() => {});
       clearRef();
       clearCart();
       toast.success("Order placed!");

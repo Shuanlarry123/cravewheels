@@ -1,0 +1,52 @@
+{
+  "name": "DispatchEvent",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "actor_id": {
+      "type": "string"
+    },
+    "from_state": {
+      "type": "string"
+    },
+    "to_state": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "urgent"
+      ],
+      "default": "info"
+    }
+  },
+  "required": [
+    "order_id",
+    "to_state"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
