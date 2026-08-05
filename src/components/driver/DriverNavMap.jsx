@@ -20,6 +20,21 @@ const ARRIVE_M = 45;
 const FOLLOW_OFFSET_M = 95;
 const PROGRESS_INTERVAL_MS = 333;
 
+// Cycling dash pattern (units of line-width) used to animate the marching-ants
+// direction-flow overlay on the remaining route.
+const FLOW_SEQ = [
+  [0, 4, 3],
+  [1, 4, 2],
+  [2, 4, 1],
+  [3, 4, 0],
+  [0, 1, 3, 4],
+  [1, 2, 2, 4],
+  [2, 3, 1, 4],
+  [3, 4, 0, 4],
+  [0, 4, 3, 4],
+  [1, 4, 2, 4],
+];
+
 function pickStyle() {
   const darkMQ = window.matchMedia?.("(prefers-color-scheme: dark)");
   const h = new Date().getHours();
@@ -73,6 +88,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const followingRef = useRef(true);
   const rafRef = useRef(null);
   const lastProgRef = useRef(0);
+  const dashStepRef = useRef(0);
+  const lastDashRef = useRef(0);
   const arrivedRef = useRef(false);
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
@@ -264,6 +281,14 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       lastProgRef.current = now;
       updateProgress();
     }
+    if (now - lastDashRef.current > 80) {
+      lastDashRef.current = now;
+      dashStepRef.current = (dashStepRef.current + 1) % FLOW_SEQ.length;
+      const m = mapRef.current;
+      if (m && m.getLayer("route-flow")) {
+        m.setPaintProperty("route-flow", "line-dasharray", FLOW_SEQ[dashStepRef.current]);
+      }
+    }
   };
 
   const recenter = () => {
@@ -309,11 +334,18 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       map.addSource("route-remaining", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addSource("route-traveled", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({
+        id: "route-glow-outer",
+        type: "line",
+        source: "route-remaining",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#FF6B2C", "line-width": 34, "line-opacity": 0.1, "line-blur": 16 },
+      });
+      map.addLayer({
         id: "route-glow",
         type: "line",
         source: "route-remaining",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#FF6B2C", "line-width": 22, "line-opacity": 0.2, "line-blur": 6 },
+        paint: { "line-color": "#FF6B2C", "line-width": 22, "line-opacity": 0.22, "line-blur": 7 },
       });
       map.addLayer({
         id: "route-casing",
@@ -343,6 +375,18 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           ],
           "line-width": 6,
           "line-opacity": 1,
+        },
+      });
+      map.addLayer({
+        id: "route-flow",
+        type: "line",
+        source: "route-remaining",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": 2.5,
+          "line-opacity": 0.9,
+          "line-dasharray": FLOW_SEQ[0],
         },
       });
       map.addLayer({
