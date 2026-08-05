@@ -14,10 +14,13 @@ export default function CreatorDashboard() {
   const [profile, setProfile] = useState(null);
   const [me, setMe] = useState(null);
   const [shares, setShares] = useState([]);
+  const [totals, setTotals] = useState({ clicks: 0, orders: 0, earned: 0 });
   const [loading, setLoading] = useState(true);
 
   const loadShares = useCallback(async (uid) => {
-    setShares(await base44.entities.CreatorShare.filter({ creator_id: uid }, "-earnings", 50));
+    const all = await base44.entities.CreatorShare.filter({ creator_id: uid }, "-earnings", 500);
+    setShares(all);
+    return all;
   }, []);
 
   useEffect(() => {
@@ -30,7 +33,19 @@ export default function CreatorDashboard() {
         const profs = await base44.entities.CreatorProfile.filter({});
         const mine = profs.find((p) => p.created_by_id === u.id);
         setProfile(mine || null);
-        if (mine) await loadShares(u.id);
+        if (mine) {
+          const linkShares = await loadShares(u.id);
+          const refOrders = await base44.entities.Order.filter(
+            { referral_code: mine.referral_code },
+            "-created_date",
+            500
+          );
+          setTotals({
+            clicks: linkShares.reduce((s, x) => s + Number(x.clicks || 0), 0),
+            orders: refOrders.length,
+            earned: refOrders.reduce((s, o) => s + Number(o.commission_amount || 0), 0),
+          });
+        }
       } catch {
         toast.error("Failed to load creator dashboard");
       } finally {
@@ -71,7 +86,7 @@ export default function CreatorDashboard() {
         <p className="text-sm text-muted-foreground mb-4">Track your referrals & earnings</p>
 
         <div className="space-y-4">
-          <CreatorStats profile={profile} />
+          <CreatorStats profile={profile} totals={totals} />
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
               Active Links ({shares.length})

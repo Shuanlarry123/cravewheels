@@ -1,8 +1,7 @@
-import React from "react";
-import { MousePointerClick, ShoppingBag, DollarSign, Clock, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
+import { MousePointerClick, ShoppingBag, Clock, Copy, Check, TrendingUp } from "lucide-react";
 
-export default function CreatorStats({ profile }) {
+export default function CreatorStats({ profile, totals }) {
   const [copied, setCopied] = useState(false);
 
   const copyCode = () => {
@@ -18,15 +17,32 @@ export default function CreatorStats({ profile }) {
       ? "bg-destructive/15 text-destructive"
       : "bg-yellow-500/15 text-yellow-400";
 
+  const earned = totals?.earned ?? profile.total_earnings ?? 0;
+  const clicks = totals?.clicks ?? profile.total_clicks ?? 0;
+  const orders = totals?.orders ?? profile.total_orders ?? 0;
+  const pending = profile.pending_earnings ?? 0;
+  const conversion = clicks > 0 ? ((orders / clicks) * 100).toFixed(1) : "0.0";
+
   const cards = [
-    { icon: MousePointerClick, label: "Clicks", value: profile.total_clicks || 0 },
-    { icon: ShoppingBag, label: "Orders", value: profile.total_orders || 0 },
-    { icon: DollarSign, label: "Earned", value: `$${(profile.total_earnings || 0).toFixed(2)}` },
-    { icon: Clock, label: "Pending", value: `$${(profile.pending_earnings || 0).toFixed(2)}` },
+    { icon: MousePointerClick, label: "Total Clicks", value: clicks },
+    { icon: ShoppingBag, label: "Orders", value: orders },
+    { icon: Clock, label: "Pending Payout", value: `$${pending.toFixed(2)}` },
+    { icon: TrendingUp, label: "Conversion", value: `${conversion}%` },
   ];
 
   return (
     <div className="space-y-3">
+      {/* Hero earnings — exactly how much made from referral links */}
+      <div className="rounded-2xl p-4 border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent">
+        <p className="text-xs text-muted-foreground">Total earned from your links</p>
+        <p className="text-4xl font-bold text-primary mt-1 leading-none">${earned.toFixed(2)}</p>
+        <div className="flex items-center gap-4 mt-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1"><ShoppingBag className="w-3.5 h-3.5" /> {orders} orders</span>
+          <span className="flex items-center gap-1"><MousePointerClick className="w-3.5 h-3.5" /> {clicks} clicks</span>
+        </div>
+      </div>
+
+      {/* Referral code */}
       <div className="bg-card border border-border rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-muted-foreground">Your referral code</span>
@@ -48,6 +64,7 @@ export default function CreatorStats({ profile }) {
         </p>
       </div>
 
+      {/* Stat cards */}
       <div className="grid grid-cols-2 gap-2">
         {cards.map((c) => (
           <div key={c.label} className="bg-card border border-border rounded-2xl p-3 flex flex-col gap-1">
