@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Receipt, ChevronRight, Repeat } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
+import StaticMapImage from "@/components/StaticMapImage";
 import { CartProvider, useCart } from "@/lib/cartContext";
 import { toast } from "react-hot-toast";
 
@@ -87,6 +88,11 @@ function OrdersInner() {
                       {o.status.replace("_", " ")}
                     </span>
                   </div>
+                  {o.latitude != null && o.longitude != null && (
+                    <div className="mt-3 rounded-xl overflow-hidden border border-border">
+                      <StaticMapImage lon={o.longitude} lat={o.latitude} zoom={14} height={120} className="w-full h-[120px]" />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-[11px] text-muted-foreground">
                       {new Date(o.created_date).toLocaleString()}
