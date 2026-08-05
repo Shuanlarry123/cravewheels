@@ -58,10 +58,14 @@ export default function AddressAutocomplete({ value, onChange, onPick, placehold
   }, [q, token, prox]);
 
   const pick = (feat) => {
-    const label = feat.place_name;
-    setQ(label);
-    onChange(label);
-    onPick?.({ address: label, lat: feat.center[1], lng: feat.center[0] });
+    const ctx = feat.context || [];
+    const city = (ctx.find((c) => c.id.startsWith("place")) || {}).text || "";
+    const state = (ctx.find((c) => c.id.startsWith("region")) || {}).text || "";
+    const zip = (ctx.find((c) => c.id.startsWith("postcode")) || {}).text || "";
+    const street = feat.address ? `${feat.address} ${feat.text}` : feat.text || feat.place_name;
+    setQ(street);
+    onChange(street);
+    onPick?.({ address: feat.place_name, lat: feat.center[1], lng: feat.center[0], street, city, state, zip });
     setOpen(false);
     setResults([]);
   };

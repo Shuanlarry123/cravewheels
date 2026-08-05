@@ -17,7 +17,11 @@ function CartInner() {
   const [scheduleMode, setScheduleMode] = useState("asap");
   const [scheduledFor, setScheduledFor] = useState("");
   const [dropoff, setDropoff] = useState(DROPOFF_OPTIONS[0]);
-  const [address, setAddress] = useState("");
+  const [street, setStreet] = useState("");
+  const [apt, setApt] = useState("");
+  const [city, setCity] = useState("");
+  const [stateStr, setStateStr] = useState("");
+  const [zip, setZip] = useState("");
   const [lat, setLat] = useState(null);
   const [lng, setLng] = useState(null);
   const [notes, setNotes] = useState("");
@@ -86,8 +90,8 @@ function CartInner() {
   };
 
   const placeOrder = async () => {
-    if (orderType === "delivery" && !address.trim()) {
-      toast.error("Please enter a delivery address");
+    if (orderType === "delivery" && !street.trim()) {
+      toast.error("Please enter a street address");
       return;
     }
     if (orderType === "delivery" && !phone.trim()) {
@@ -112,6 +116,14 @@ function CartInner() {
           }
         } catch {}
       }
+      const fullAddress = (() => {
+        let a = street.trim();
+        if (apt.trim()) a += `, ${apt.trim()}`;
+        const cs = [city.trim(), stateStr.trim()].filter(Boolean).join(", ");
+        if (cs) a += `, ${cs}`;
+        if (zip.trim()) a += ` ${zip.trim()}`;
+        return a;
+      })();
       const order = await base44.entities.Order.create({
         restaurant_id: restaurantId,
         restaurant_name: restaurantName,
@@ -124,7 +136,7 @@ function CartInner() {
           video_url: i.video_url,
         })),
         total_amount: total,
-        delivery_address: orderType === "pickup" ? restaurant?.address || "Pickup" : address,
+        delivery_address: orderType === "pickup" ? restaurant?.address || "Pickup" : fullAddress,
         latitude: orderType === "delivery" ? lat : null,
         longitude: orderType === "delivery" ? lng : null,
         delivery_fee: effectiveFee,
@@ -246,14 +258,53 @@ function CartInner() {
             {/* Delivery or pickup details */}
             {orderType === "delivery" ? (
               <div className="mt-5 space-y-3">
-                <label className="text-sm font-medium flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Delivery Address</label>
+                <label className="text-sm font-medium flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Street Address</label>
                 <AddressAutocomplete
-                  value={address}
-                  onChange={setAddress}
-                  onPick={({ lat, lng }) => {
+                  value={street}
+                  onChange={setStreet}
+                  onPick={({ lat, lng, street: s, city: c, state: st, zip: z }) => {
                     setLat(lat);
                     setLng(lng);
+                    if (s) setStreet(s);
+                    if (c) setCity(c);
+                    if (st) setStateStr(st);
+                    if (z) setZip(z);
                   }}
+                />
+                <label className="text-sm font-medium">Apt / Suite</label>
+                <input
+                  value={apt}
+                  onChange={(e) => setApt(e.target.value)}
+                  placeholder="Apt, suite, unit (optional)"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-sm font-medium">City</label>
+                    <input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="City"
+                      className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">State</label>
+                    <input
+                      value={stateStr}
+                      onChange={(e) => setStateStr(e.target.value)}
+                      placeholder="State"
+                      className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <label className="text-sm font-medium">ZIP Code</label>
+                <input
+                  value={zip}
+                  onChange={(e) => setZip(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="ZIP code"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary"
                 />
                 <label className="text-sm font-medium flex items-center gap-2"><Phone className="w-4 h-4 text-primary" /> Contact Phone</label>
                 <input
