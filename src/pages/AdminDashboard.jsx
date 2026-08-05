@@ -18,6 +18,7 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminMapSection from "@/components/admin/AdminMapSection";
 import AdminDispatchMap from "@/components/admin/AdminDispatchMap";
+import DispatchOpsPanel from "@/components/admin/DispatchOpsPanel";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminRestaurants from "@/components/admin/AdminRestaurants";
 import AdminDrivers from "@/components/admin/AdminDrivers";
@@ -291,8 +292,13 @@ export default function AdminDashboard() {
               <AdminMapSection data={data} />
             </div>
           ) : section === "dispatch" ? (
-            <div className="h-full">
-              <AdminDispatchMap data={data} />
+            <div className="h-full flex flex-col md:flex-row">
+              <div className="h-1/2 md:h-full md:flex-1 min-h-0">
+                <AdminDispatchMap data={data} />
+              </div>
+              <div className="h-1/2 md:h-full md:w-[440px] md:border-l border-border min-h-0">
+                <DispatchOpsPanel data={data} />
+              </div>
             </div>
           ) : (
             <main className="h-full overflow-y-auto p-4 md:p-6">

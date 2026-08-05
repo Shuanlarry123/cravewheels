@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Not your delivery' }, { status: 403 });
     }
 
-    await base44.entities.Order.update(orderId, { status });
+    await base44.entities.Order.update(orderId, { status, state_changed_at: new Date().toISOString() });
 
     let emailed = false;
     if (order.created_by_id) {

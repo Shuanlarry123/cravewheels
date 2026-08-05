@@ -131,6 +131,7 @@ function CartInner() {
         tip,
         notes,
         status: "pending",
+        state_changed_at: new Date().toISOString(),
         payment_status: "paid",
         referral_code: refCode || null,
         creator_id,

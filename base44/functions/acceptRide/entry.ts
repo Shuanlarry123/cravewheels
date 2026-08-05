@@ -16,7 +16,7 @@ export default async function(req) {
     // Atomic guard: only matches while the order is still unassigned.
     await base44.asServiceRole.entities.Order.updateMany(
       { id: orderId, driver_id: null },
-      { $set: { driver_id: user.id, status: 'preparing', pickup_code, delivery_pin } }
+      { $set: { driver_id: user.id, status: 'preparing', pickup_code, delivery_pin, state_changed_at: new Date().toISOString() } }
     ).catch(() => {});
 
     const after = await base44.asServiceRole.entities.Order.get(orderId).catch(() => null);

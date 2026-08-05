@@ -1,0 +1,44 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "driver_heartbeat_watch",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sweep": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "heartbeatWatch"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Heartbeat sweep",
+            "description": "Reassign stale drivers + flag unmatched rides"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Sweeps every 5 minutes: reassigns drivers whose heartbeat went stale or who went offline mid-trip, and flags ride requests unmatched past the threshold so ops can intervene.",
+  "name": "Driver Heartbeat Watch",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/5 * * * *",
+      "one_time_date": null,
+      "timezone": "America/New_York",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}

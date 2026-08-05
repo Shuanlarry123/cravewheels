@@ -144,7 +144,7 @@ export default function DriverDashboard() {
         if (now - lastPersistRef.current >= 6000) {
           lastPersistRef.current = now;
           base44.entities.DriverProfile
-            .update(profile.id, { latitude: loc.lat, longitude: loc.lng })
+            .update(profile.id, { latitude: loc.lat, longitude: loc.lng, last_heartbeat: new Date().toISOString() })
             .catch(() => {});
         }
       },
@@ -165,6 +165,16 @@ export default function DriverDashboard() {
     }
   }, [profile?.id, profile?.is_available, profile?.availability_status]);
 
+  // Heartbeat: ops reassigns drivers whose last_heartbeat goes stale
+  useEffect(() => {
+    if (!profile?.id || !profile.is_available) return;
+    const tick = () =>
+      base44.entities.DriverProfile.update(profile.id, { last_heartbeat: new Date().toISOString() }).catch(() => {});
+    tick();
+    const id = setInterval(tick, 15000);
+    return () => clearInterval(id);
+  }, [profile?.id, profile?.is_available]);
+
   const acceptOrder = async (order) => {
     if (!profile?.is_approved) {
       toast.error("Your account is pending approval");
@@ -179,6 +189,7 @@ export default function DriverDashboard() {
         status: "preparing",
         pickup_code,
         delivery_pin,
+        state_changed_at: new Date().toISOString(),
       });
       toast.success("Delivery accepted");
       await loadOrders(user);
@@ -199,6 +210,38 @@ export default function DriverDashboard() {
     setRideRequest(null);
     loadOrders(user);
     setProfile((p) => (p ? { ...p, availability_status: "en_route" } : p));
+  };
+
+  const sendSOS = async () => {
+    try {
+      const active = activeOrders[0];
+      await base44.entities.DispatchEvent.create({
+        order_id: active?.id || null,
+        actor_id: user.id,
+        from_state: active?.status || "idle",
+        to_state: "sos",
+        detail: "Driver SOS / panic signal triggered",
+        severity: "urgent",
+      });
+      toast.error("SOS sent to dispatch");
+      try { navigator.vibrate?.([400, 200, 400, 200, 400]); } catch {}
+    } catch {
+      toast.error("Failed to send SOS");
+    }
+  };
+
+  const driverCancel = async (order) => {
+    if (!confirm("Release this ride? It will be re-dispatched to another driver.")) return;
+    setBusy(true);
+    try {
+      await base44.functions.invoke("reassignRide", { order_id: order.id, reason: "driver_cancelled" });
+      toast.success("Ride released");
+      await loadOrders(user);
+    } catch {
+      toast.error("Failed to release ride");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const confirmPickup = async (order, code) => {
@@ -339,6 +382,13 @@ export default function DriverDashboard() {
           >
             {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
+          <button
+            onClick={sendSOS}
+            className="absolute right-3 bottom-52 z-10 w-10 h-10 rounded-full bg-red-600 border border-red-300/40 shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="SOS panic"
+          >
+            <span className="text-white font-bold text-[10px]">SOS</span>
+          </button>
         </div>
 
         {/* Top floating stats + directions banner */}
@@ -364,6 +414,13 @@ export default function DriverDashboard() {
                     onDeliver={() => setProof({ type: "dropoff", order: currentStop.order })}
                     busy={busy}
                   />
+                  <button
+                    onClick={() => driverCancel(currentStop.order)}
+                    disabled={busy}
+                    className="mt-2 w-full text-xs font-semibold text-destructive py-2 border border-destructive/30 rounded-xl"
+                  >
+                    Can't complete this ride
+                  </button>
                 </div>
               )}
               {routeInfo?.steps?.length > 0 && (

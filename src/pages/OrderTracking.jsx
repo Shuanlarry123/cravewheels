@@ -49,6 +49,7 @@ export default function OrderTracking() {
   };
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const driverMarker = useRef(null);
@@ -232,6 +233,24 @@ export default function OrderTracking() {
     }
   }
 
+  const cancelOrder = async () => {
+    if (!confirm("Cancel this order?")) return;
+    setCancelling(true);
+    try {
+      const res = await base44.functions.invoke("cancelRide", { order_id: id, actor: "rider", reason: "rider_cancelled" });
+      if (res.data?.error) {
+        toast.error(res.data.error);
+        return;
+      }
+      toast.success(res.data?.fee ? `Order cancelled · $${res.data.fee.toFixed(2)} fee` : "Order cancelled");
+      base44.entities.Order.get(id).then(setOrder).catch(() => {});
+    } catch {
+      toast.error("Failed to cancel");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-background pb-24">
       <div className="flex items-center gap-3 px-4 pt-6 pb-4">
@@ -261,6 +280,15 @@ export default function OrderTracking() {
           )}
           {order.delivery_instructions && (
             <p className="text-xs text-muted-foreground mt-1">Drop-off: {order.delivery_instructions}</p>
+          )}
+          {!cancelled && !isPickup && ["pending", "matching", "confirmed", "preparing"].includes(order.status) && (
+            <button
+              onClick={cancelOrder}
+              disabled={cancelling}
+              className="mt-3 w-full text-xs font-semibold text-destructive py-2 border border-destructive/30 rounded-xl disabled:opacity-50"
+            >
+              {cancelling ? "Cancelling…" : "Cancel order"}
+            </button>
           )}
         </div>
 

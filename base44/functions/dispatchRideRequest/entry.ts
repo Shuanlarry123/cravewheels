@@ -64,7 +64,7 @@ export default async function(req) {
 
     // Move to "matching" regardless so it leaves the passive list and only the
     // full-screen request cards can claim it.
-    await base44.asServiceRole.entities.Order.update(orderId, { status: 'matching' }).catch(() => {});
+    await base44.asServiceRole.entities.Order.update(orderId, { status: 'matching', state_changed_at: new Date().toISOString() }).catch(() => {});
 
     if (!selected.length) {
       await base44.asServiceRole.entities.DispatchEvent.create({
