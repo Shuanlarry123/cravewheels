@@ -23,16 +23,16 @@ const PROGRESS_INTERVAL_MS = 333;
 // Cycling dash pattern (units of line-width) used to animate the marching-ants
 // direction-flow overlay on the remaining route.
 const FLOW_SEQ = [
-  [0, 2, 3, 2],
-  [1, 2, 2, 2],
-  [2, 2, 1, 2],
-  [3, 2, 0, 2],
-  [0, 1, 3, 2],
-  [1, 1, 2, 2],
-  [2, 1, 1, 2],
-  [3, 1, 0, 2],
-  [0, 2, 3, 2],
-  [1, 2, 2, 2],
+  [1, 2, 3, 2],
+  [2, 2, 2, 2],
+  [3, 2, 1, 2],
+  [1, 1, 3, 2],
+  [2, 1, 2, 2],
+  [3, 1, 1, 2],
+  [1, 2, 3, 2],
+  [2, 2, 2, 2],
+  [3, 2, 1, 2],
+  [1, 1, 3, 2],
 ];
 
 function pickStyle() {
@@ -422,6 +422,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     map.on("load", () => {
       map.addSource("route-remaining", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addSource("route-traveled", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      remainingSrcRef.current = map.getSource("route-remaining");
+      traveledSrcRef.current = map.getSource("route-traveled");
       map.addLayer({
         id: "route-casing",
         type: "line",
@@ -453,26 +455,28 @@ const DriverNavMap = forwardRef(function DriverNavMap(
         },
       });
       map.addLayer({
-        id: "route-flow",
-        type: "line",
-        source: "route-remaining",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": 2.5,
-          "line-opacity": 0.9,
-          "line-dasharray": FLOW_SEQ[0],
-        },
-      });
-      map.addLayer({
         id: "route-traveled",
         type: "line",
         source: "route-traveled",
         layout: { "line-join": "round", "line-cap": "round" },
         paint: { "line-color": "#5a5a66", "line-width": 5, "line-opacity": 0.8 },
       });
-      remainingSrcRef.current = map.getSource("route-remaining");
-      traveledSrcRef.current = map.getSource("route-traveled");
+      try {
+        map.addLayer({
+          id: "route-flow",
+          type: "line",
+          source: "route-remaining",
+          layout: { "line-join": "round", "line-cap": "round" },
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 2.5,
+            "line-opacity": 0.9,
+            "line-dasharray": FLOW_SEQ[0],
+          },
+        });
+      } catch (e) {
+        // Non-critical flow overlay; route still renders without it.
+      }
 
       puckRef.current = new mapboxgl.Marker({ element: makePuckEl(), rotationAlignment: "map" })
         .setLngLat([startLng, startLat])
