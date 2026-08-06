@@ -14,6 +14,7 @@ import CollapsibleSheet from "@/components/driver/CollapsibleSheet";
 import DriverNavMap from "@/components/driver/DriverNavMap";
 import { buildStops, buildStopsOptimized } from "@/lib/routeOptimizer";
 import StopList from "@/components/driver/StopList";
+import BatchPickupList from "@/components/driver/BatchPickupList";
 import DeliveryProof from "@/components/driver/DeliveryProof";
 import RideRequestCard from "@/components/driver/RideRequestCard";
 import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, Volume2, VolumeX } from "lucide-react";
@@ -233,7 +234,7 @@ export default function DriverDashboard() {
         delivery_pin,
         state_changed_at: new Date().toISOString(),
       });
-      toast.success("Delivery accepted");
+      toast.success(activeOrders.length ? "Added to your trip" : "Delivery accepted");
       await loadOrders(user);
     } catch {
       toast.error("Failed to accept delivery");
@@ -437,6 +438,11 @@ export default function DriverDashboard() {
     .sort((a, b) => (a.mi == null ? 1 : b.mi == null ? -1 : a.mi - b.mi))
     .map((e) => e.order);
 
+  const activeRestaurantId = activeOrders[0]?.restaurant_id;
+  const hasPendingPickup = activeOrders.some((o) => !o.pickup_confirmed && o.status !== "picked_up");
+  const batchableOrders =
+    hasPendingPickup && activeRestaurantId ? available.filter((o) => o.restaurant_id === activeRestaurantId) : [];
+
   return (
     <DriverLayout>
       <div className="relative w-full h-[calc(100dvh-4rem)] overflow-hidden">
@@ -491,10 +497,23 @@ export default function DriverDashboard() {
         <CollapsibleSheet defaultSnap={1}>
           {inDelivery ? (
             <>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                Route · {stops.length} stop{stops.length !== 1 ? "s" : ""}
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
+                <span>Route · {stops.length} stop{stops.length !== 1 ? "s" : ""}</span>
+                {activeOrders.length > 1 && (
+                  <span className="normal-case text-primary bg-primary/15 px-2 py-0.5 rounded-full text-[11px] font-semibold">
+                    {activeOrders.length} batched
+                  </span>
+                )}
               </h2>
               <StopList stops={stops} activeIndex={0} restaurants={restaurants} />
+              {batchableOrders.length > 0 && (
+                <BatchPickupList
+                  orders={batchableOrders}
+                  restaurantName={currentRestaurant?.name || activeOrders[0]?.restaurant_name}
+                  onAdd={acceptOrder}
+                  busy={busy}
+                />
+              )}
               {currentStop && (
                 <div className="mt-3">
                   <ActiveDeliveryCard
