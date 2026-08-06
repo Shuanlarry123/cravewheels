@@ -108,6 +108,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const arrivedRef = useRef(false);
   const signalMarkersRef = useRef([]);
   const lastSignalIdxRef = useRef(-1);
+  const hadLocRef = useRef(false);
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
 
@@ -429,7 +430,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
         type: "line",
         source: "route-remaining",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.95 },
+        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.95 },
       });
       map.addLayer({
         id: "route-core",
@@ -450,7 +451,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
             "#b91c1c",
             "#FF6B2C",
           ],
-          "line-width": 5,
+          "line-width": 6,
           "line-opacity": 1,
         },
       });
@@ -459,7 +460,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
         type: "line",
         source: "route-traveled",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#5a5a66", "line-width": 5, "line-opacity": 0.8 },
+        paint: { "line-color": "#5a5a66", "line-width": 6, "line-opacity": 0.8 },
       });
       try {
         map.addLayer({
@@ -469,8 +470,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           layout: { "line-join": "round", "line-cap": "round" },
           paint: {
             "line-color": "#ffffff",
-            "line-width": 2.5,
-            "line-opacity": 0.6,
+            "line-width": 2,
+            "line-opacity": 0.5,
             "line-dasharray": FLOW_SEQ[0],
           },
         });
@@ -572,6 +573,18 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     fetchAndDraw([origin, ...cur.map((s) => [s.lng, s.lat])]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopsKey, token]);
+
+  // Re-fetch the route once the driver's first real GPS fix arrives, so the
+  // line is drawn from the actual origin instead of the initial fallback.
+  useEffect(() => {
+    if (driverLng == null || driverLat == null) return;
+    if (hadLocRef.current) return;
+    hadLocRef.current = true;
+    const cur = stopsRef.current || [];
+    if (!cur.length || !mapRef.current) return;
+    fetchAndDraw([[driverLng, driverLat], ...cur.map((s) => [s.lng, s.lat])]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverLng, driverLat]);
 
   // Stop markers
   useEffect(() => {
