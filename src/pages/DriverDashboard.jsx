@@ -14,7 +14,6 @@ import CollapsibleSheet from "@/components/driver/CollapsibleSheet";
 import DriverNavMap from "@/components/driver/DriverNavMap";
 import { buildStops, buildStopsOptimized } from "@/lib/routeOptimizer";
 import StopList from "@/components/driver/StopList";
-import PickupProof from "@/components/driver/PickupProof";
 import DeliveryProof from "@/components/driver/DeliveryProof";
 import RideRequestCard from "@/components/driver/RideRequestCard";
 import { Loader2, ChevronDown, ChevronUp, Route as RouteIcon, Volume2, VolumeX } from "lucide-react";
@@ -316,11 +315,7 @@ export default function DriverDashboard() {
     }
   };
 
-  const confirmPickup = async (order, code) => {
-    if (code !== order.pickup_code) {
-      toast.error("Incorrect pickup code");
-      return;
-    }
+  const confirmPickup = async (order) => {
     setBusy(true);
     try {
       await base44.functions.invoke("notifyOrderStatus", { order_id: order.id, status: "picked_up" });
@@ -503,7 +498,7 @@ export default function DriverDashboard() {
                   <ActiveDeliveryCard
                     order={currentStop.order}
                     restaurant={currentRestaurant}
-                    onPickup={() => setProof({ type: "pickup", order: currentStop.order })}
+                    onPickup={() => confirmPickup(currentStop.order)}
                     onDeliver={() => setProof({ type: "dropoff", order: currentStop.order })}
                     busy={busy}
                   />
@@ -575,9 +570,6 @@ export default function DriverDashboard() {
           )}
         </CollapsibleSheet>
 
-        {proof?.type === "pickup" && (
-          <PickupProof order={proof.order} onClose={() => setProof(null)} onConfirm={confirmPickup} busy={busy} />
-        )}
         {proof?.type === "dropoff" && (
           <DeliveryProof order={proof.order} onClose={() => setProof(null)} onConfirm={confirmDelivery} busy={busy} />
         )}
