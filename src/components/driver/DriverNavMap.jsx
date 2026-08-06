@@ -470,7 +470,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           paint: {
             "line-color": "#ffffff",
             "line-width": 2.5,
-            "line-opacity": 0.9,
+            "line-opacity": 0.6,
             "line-dasharray": FLOW_SEQ[0],
           },
         });
@@ -485,7 +485,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       const cur = stopsRef.current || [];
       if (cur.length)
         fetchAndDraw([
-          [driverLng ?? 0, driverLat ?? 0],
+          [driverLng ?? displayRef.current?.lng ?? 0, driverLat ?? displayRef.current?.lat ?? 0],
           ...cur.map((s) => [s.lng, s.lat]),
         ]);
     });

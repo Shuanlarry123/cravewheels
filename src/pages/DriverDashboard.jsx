@@ -459,28 +459,30 @@ export default function DriverDashboard() {
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           )}
-          <button
-            onClick={() => setVoiceEnabled((v) => !v)}
-            className={`absolute right-3 bottom-40 z-10 w-10 h-10 rounded-full backdrop-blur border shadow-lg flex items-center justify-center active:scale-95 transition-transform ${
-              voiceEnabled
-                ? "bg-primary/20 border-primary/40 text-primary"
-                : "bg-card/95 border-border text-muted-foreground"
-            }`}
-            aria-label={voiceEnabled ? "Mute voice navigation" : "Enable voice navigation"}
-          >
-            {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={sendSOS}
-            className="absolute right-3 bottom-52 z-10 w-10 h-10 rounded-full bg-red-600 border border-red-300/40 shadow-lg flex items-center justify-center active:scale-95 transition-transform"
-            aria-label="SOS panic"
-          >
-            <span className="text-white font-bold text-[10px]">SOS</span>
-          </button>
+          <div className="absolute right-3 top-[calc(env(safe-area-inset-top)+8.5rem)] z-10 flex flex-col gap-2">
+            <button
+              onClick={sendSOS}
+              className="w-10 h-10 rounded-full bg-red-600/90 border border-red-300/40 shadow-lg flex items-center justify-center active:scale-95 transition-transform backdrop-blur"
+              aria-label="SOS panic"
+            >
+              <span className="text-white font-bold text-[10px]">SOS</span>
+            </button>
+            <button
+              onClick={() => setVoiceEnabled((v) => !v)}
+              className={`w-10 h-10 rounded-full backdrop-blur border shadow-lg flex items-center justify-center active:scale-95 transition-transform ${
+                voiceEnabled
+                  ? "bg-primary/20 border-primary/40 text-primary"
+                  : "bg-card/95 border-border text-muted-foreground"
+              }`}
+              aria-label={voiceEnabled ? "Mute voice navigation" : "Enable voice navigation"}
+            >
+              {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         {/* Top floating stats + directions banner */}
-        <div className="absolute top-0 inset-x-0 pt-[calc(env(safe-area-inset-top)+0.75rem)] px-3 pb-8 z-10 bg-gradient-to-b from-background/85 to-transparent space-y-2">
+        <div className="absolute top-0 inset-x-0 pt-[calc(env(safe-area-inset-top)+0.75rem)] px-3 pb-8 z-10 bg-gradient-to-b from-background/70 to-transparent space-y-2">
           <DriverStats statsOnly profile={profile} />
           {inDelivery && stops.length > 0 && <DirectionsBanner routeInfo={progress || routeInfo} />}
         </div>
