@@ -82,7 +82,7 @@ function makeStopEl(num, type) {
 }
 
 const DriverNavMap = forwardRef(function DriverNavMap(
-  { token, driverLng, driverLat, stops, onRouteInfo, onProgress, onDeviation, follow },
+  { token, driverLng, driverLat, stops, onRouteInfo, onProgress, onDeviation, follow, preview },
   ref
 ) {
   const containerRef = useRef(null);
@@ -101,6 +101,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const lastMatchRef = useRef(0);
   const lastRerouteRef = useRef(0);
   const followingRef = useRef(true);
+  const previewRef = useRef(false);
+  previewRef.current = !!preview;
   const rafRef = useRef(null);
   const lastProgRef = useRef(0);
   const dashStepRef = useRef(0);
@@ -136,6 +138,18 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     if (traveledSrcRef.current)
       traveledSrcRef.current.setData({ type: "FeatureCollection", features: [] });
     if (res) {
+      if (previewRef.current && res.features?.length && mapRef.current) {
+        const all = [];
+        res.features.forEach((f) => {
+          const c = f.geometry?.coordinates || [];
+          if (Array.isArray(c[0])) c.forEach((p) => all.push(p));
+          else all.push(c);
+        });
+        if (all.length >= 2) {
+          const bounds = all.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(all[0], all[0]));
+          mapRef.current.fitBounds(bounds, { padding: 70, pitch: 0, bearing: 0, duration: 600 });
+        }
+      }
       const steps = res.steps || [];
       const firstNext = steps[1] || steps[0];
       onRouteInfo?.({
@@ -352,7 +366,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       }
       if (pulseRef.current) pulseRef.current.setLngLat([disp.lng, disp.lat]);
 
-      if (followingRef.current) {
+      if (followingRef.current && !previewRef.current) {
         const nav = (stopsRef.current || []).length > 0;
         if (nav) {
           map.jumpTo({
@@ -626,6 +640,14 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       setShowRecenter(false);
     }
   }, [follow]);
+
+  // In preview mode, stop following the puck so the full route stays framed.
+  useEffect(() => {
+    if (preview) {
+      followingRef.current = false;
+      setShowRecenter(false);
+    }
+  }, [preview]);
 
   useImperativeHandle(ref, () => ({
     recenter,

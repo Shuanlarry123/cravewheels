@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { getUserLocation, haversineKm } from "@/lib/distance";
 import DriverLayout from "@/components/DriverLayout";
 import DriverOnboarding from "@/components/driver/DriverOnboarding";
-import AvailableDeliveries from "@/components/driver/AvailableDeliveries";
+import DispatchQueue from "@/components/driver/DispatchQueue";
 import ActiveDeliveryCard from "@/components/driver/ActiveDeliveryCard";
 import DriverStats from "@/components/driver/DriverStats";
 import DriverStatsOverview from "@/components/driver/DriverStatsOverview";
@@ -37,6 +37,7 @@ export default function DriverDashboard() {
   const [sheetView, setSheetView] = useState("orders");
   const [proof, setProof] = useState(null);
   const [rideRequest, setRideRequest] = useState(null);
+  const [previewOrder, setPreviewOrder] = useState(null);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const mapRef = useRef(null);
@@ -234,6 +235,7 @@ export default function DriverDashboard() {
         delivery_pin,
         state_changed_at: new Date().toISOString(),
       });
+      setPreviewOrder(null);
       toast.success(activeOrders.length ? "Added to your trip" : "Delivery accepted");
       await loadOrders(user);
     } catch {
@@ -443,6 +445,26 @@ export default function DriverDashboard() {
   const batchableOrders =
     hasPendingPickup && activeRestaurantId ? available.filter((o) => o.restaurant_id === activeRestaurantId) : [];
 
+  const previewStops = (() => {
+    if (!previewOrder || !location) return [];
+    const rest = restaurants[previewOrder.restaurant_id];
+    if (!rest || rest.latitude == null || rest.longitude == null) return [];
+    const s = [
+      { type: "pickup", order: previewOrder, lat: rest.latitude, lng: rest.longitude, label: rest.name || "Pickup" },
+    ];
+    if (previewOrder.latitude != null && previewOrder.longitude != null) {
+      s.push({
+        type: "dropoff",
+        order: previewOrder,
+        lat: previewOrder.latitude,
+        lng: previewOrder.longitude,
+        label: previewOrder.delivery_address || "Customer",
+      });
+    }
+    return s;
+  })();
+  const mapStops = inDelivery ? stops : previewStops;
+
   return (
     <DriverLayout>
       <div className="relative w-full h-[calc(100dvh-4rem)] overflow-hidden">
@@ -454,11 +476,12 @@ export default function DriverDashboard() {
               token={token}
               driverLng={location?.lng}
               driverLat={location?.lat}
-              stops={stops}
+              stops={mapStops}
               onRouteInfo={setRouteInfo}
               onProgress={setProgress}
               onDeviation={onDeviation}
               follow={inDelivery}
+              preview={!inDelivery && !!previewOrder}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -582,9 +605,17 @@ export default function DriverDashboard() {
               ) : (
                 <>
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                    Oncoming Orders {available.length > 0 && `(${available.length})`}
+                    Dispatch Queue {available.length > 0 && `(${available.length})`}
                   </h2>
-                  <AvailableDeliveries orders={available} restaurants={restaurants} onAccept={acceptOrder} busy={busy} />
+                  <DispatchQueue
+                    orders={available}
+                    restaurants={restaurants}
+                    location={location}
+                    onAccept={acceptOrder}
+                    onPreview={(o) => setPreviewOrder((cur) => (cur?.id === o.id ? null : o))}
+                    selectedId={previewOrder?.id}
+                    busy={busy}
+                  />
                 </>
               )}
             </>
