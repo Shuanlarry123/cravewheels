@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, Plus, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
 import SelectSheet from "@/components/SelectSheet";
+import ModifierGroupsEditor from "@/components/restaurant/ModifierGroupsEditor";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = ["Breakfast", "Lunch", "Dinner", "Specials", "Desserts", "Drinks", "Bowls", "Other"];
@@ -12,6 +13,7 @@ export default function MenuItemForm({ restaurant, onCreated }) {
   const [video, setVideo] = useState(null);
   const [saving, setSaving] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [modifierGroups, setModifierGroups] = useState([]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -33,10 +35,21 @@ export default function MenuItemForm({ restaurant, onCreated }) {
         restaurant_id: restaurant.id,
         restaurant_name: restaurant.name,
         is_available: true,
+        modifier_groups: modifierGroups
+          .filter((g) => g.title.trim() && (g.options || []).some((o) => o.name.trim()))
+          .map((g) => ({
+            title: g.title.trim(),
+            type: g.type || "single",
+            required: !!g.required,
+            options: (g.options || [])
+              .filter((o) => o.name.trim())
+              .map((o) => ({ name: o.name.trim(), price: Number(o.price) || 0, default: !!o.default })),
+          })),
       });
       toast.success("Menu item added");
       setForm({ name: "", description: "", price: "", category: "", thumbnail_url: "" });
       setVideo(null);
+      setModifierGroups([]);
       onCreated();
     } catch {
       toast.error("Failed to add item");
@@ -83,6 +96,10 @@ export default function MenuItemForm({ restaurant, onCreated }) {
           title="Category"
         />
         <input value={form.thumbnail_url} onChange={(e) => set("thumbnail_url", e.target.value)} placeholder="Thumbnail URL (optional)" className={inputCls} />
+        <div className="pt-1">
+          <p className="text-xs text-muted-foreground mb-2">Customizations (sauces, toppings, sizes…)</p>
+          <ModifierGroupsEditor value={modifierGroups} onChange={setModifierGroups} />
+        </div>
         <button onClick={submit} disabled={saving} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
           {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Plus className="w-4 h-4" /> Add to menu</>}
         </button>

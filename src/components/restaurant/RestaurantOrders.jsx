@@ -36,10 +36,17 @@ export default function RestaurantOrders({ orders, onAdvance, busy }) {
                   <Clock className="w-3 h-3" /> Scheduled: {new Date(o.scheduled_for).toLocaleString()}
                 </p>
               )}
-              <div className="space-y-1 mb-2">
+              <div className="space-y-1.5 mb-2">
                 {(o.items || []).map((it, i) => (
-                  <div key={i} className="flex justify-between text-xs text-muted-foreground">
-                    <span>{it.quantity}× {it.name}</span>
+                  <div key={i} className="flex justify-between text-xs text-muted-foreground gap-2">
+                    <div className="min-w-0">
+                      <p><span className="text-foreground font-medium">{it.quantity}×</span> {it.name}</p>
+                      {it.modifiers && it.modifiers.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground pl-4 leading-tight">
+                          {it.modifiers.map((m) => m.name).join(", ")}
+                        </p>
+                      )}
+                    </div>
                     <span>${((it.price || 0) * (it.quantity || 1)).toFixed(2)}</span>
                   </div>
                 ))}

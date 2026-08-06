@@ -239,8 +239,8 @@ function FeedInner() {
 
   const openQuickAdd = (item) => setQuick(item);
 
-  const confirmQuickAdd = (item, qty) => {
-    const res = addItem(item, item._restaurant || { id: item.restaurant_id, name: item.restaurant_name }, qty);
+  const confirmQuickAdd = (item, qty, modifiers) => {
+    const res = addItem(item, item._restaurant || { id: item.restaurant_id, name: item.restaurant_name }, qty, modifiers);
     if (res.added) {
       toast.success(`${qty} × ${item.name} added`);
       setQuick(null);

@@ -7,6 +7,8 @@ import { toast } from "react-hot-toast";
 import CommentSection from "@/components/CommentSection";
 import CraveScoreBadge from "@/components/CraveScoreBadge";
 import RatingSummary from "@/components/RatingSummary";
+import ItemCustomizer from "@/components/ItemCustomizer";
+import { useItemCustomizer } from "@/lib/useItemCustomizer";
 import { computeCraveScore, REACTION_STAR } from "@/lib/craveScore";
 
 function ItemInner() {
@@ -20,6 +22,7 @@ function ItemInner() {
   const [loading, setLoading] = useState(true);
   const [crave, setCrave] = useState(null);
   const [ratingInfo, setRatingInfo] = useState(null);
+  const { sel, toggle, modifiers, unitPrice, valid } = useItemCustomizer(item?.price, item?.modifier_groups);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -90,7 +93,11 @@ function ItemInner() {
   }, [id]);
 
   const handleAdd = () => {
-    const res = addItem(item, restaurant || { id: item.restaurant_id, name: item.restaurant_name });
+    if (!valid) {
+      toast.error("Please complete the required options");
+      return;
+    }
+    const res = addItem(item, restaurant || { id: item.restaurant_id, name: item.restaurant_name }, qty, modifiers);
     if (res.added) {
       toast.success(`${qty} × ${item.name} added`);
       navigate("/cart");
@@ -150,7 +157,7 @@ function ItemInner() {
         )}
 
         <h1 className="text-2xl font-bold">{item.name}</h1>
-        <p className="text-primary text-xl font-bold mt-1">${item.price.toFixed(2)}</p>
+        <p className="text-primary text-xl font-bold mt-1">${unitPrice.toFixed(2)}</p>
         <div className="mt-3">
           <CraveScoreBadge score={crave?.score} hasData={crave?.hasData} />
         </div>
@@ -158,6 +165,12 @@ function ItemInner() {
           <RatingSummary avg={ratingInfo?.avg} orders={ratingInfo?.orders} />
         </div>
         <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{item.description}</p>
+
+        {item.modifier_groups && item.modifier_groups.length > 0 && (
+          <div className="mt-5">
+            <ItemCustomizer groups={item.modifier_groups} sel={sel} onToggle={toggle} />
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-6">
           <span className="text-sm font-medium">Quantity</span>
@@ -191,11 +204,13 @@ function ItemInner() {
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md p-4 bg-background/95 backdrop-blur border-t border-border z-50">
         <button
           onClick={handleAdd}
-          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          disabled={!valid}
+          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
         >
           <ShoppingBag className="w-5 h-5" />
-          Add to Cart · ${(item.price * qty).toFixed(2)}
+          Add to Cart · ${(unitPrice * qty).toFixed(2)}
         </button>
+        {!valid && <p className="text-xs text-destructive text-center mt-2">Please complete the required options</p>}
       </div>
     </div>
   );

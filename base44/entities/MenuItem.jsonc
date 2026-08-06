@@ -41,6 +41,48 @@
     "likes": {
       "type": "number",
       "default": 0
+    },
+    "modifier_groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "single",
+              "multi"
+            ],
+            "default": "single"
+          },
+          "required": {
+            "type": "boolean",
+            "default": false
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number",
+                  "default": 0
+                },
+                "default": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [

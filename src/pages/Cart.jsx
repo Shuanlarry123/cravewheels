@@ -136,6 +136,7 @@ function CartInner() {
           price: i.price,
           quantity: i.quantity,
           video_url: i.video_url,
+          modifiers: i.modifiers || [],
         })),
         total_amount: total,
         delivery_address: orderType === "pickup" ? restaurant?.address || "Pickup" : fullAddress,
@@ -196,21 +197,26 @@ function CartInner() {
           <>
             <div className="space-y-3">
               {items.map((i) => (
-                <div key={i.menu_item_id} className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3">
-                  <div className="flex-1">
+                <div key={i.lineId || i.menu_item_id} className="flex items-start gap-3 bg-card border border-border rounded-2xl p-3">
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{i.name}</p>
-                    <p className="text-primary font-semibold text-sm">${i.price.toFixed(2)}</p>
+                    {i.modifiers && i.modifiers.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                        {i.modifiers.map((m) => m.name).join(", ")}
+                      </p>
+                    )}
+                    <p className="text-primary font-semibold text-sm mt-0.5">${i.price.toFixed(2)}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => updateQty(i.menu_item_id, i.quantity - 1)} className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center">
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <button onClick={() => updateQty(i.lineId || i.menu_item_id, i.quantity - 1)} className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <span className="w-5 text-center text-sm font-semibold">{i.quantity}</span>
-                    <button onClick={() => updateQty(i.menu_item_id, i.quantity + 1)} className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center">
+                    <button onClick={() => updateQty(i.lineId || i.menu_item_id, i.quantity + 1)} className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center">
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <button onClick={() => updateQty(i.menu_item_id, 0)} className="text-muted-foreground hover:text-destructive">
+                  <button onClick={() => updateQty(i.lineId || i.menu_item_id, 0)} className="text-muted-foreground hover:text-destructive mt-0.5">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
