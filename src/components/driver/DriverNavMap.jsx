@@ -23,16 +23,16 @@ const PROGRESS_INTERVAL_MS = 333;
 // Cycling dash pattern (units of line-width) used to animate the marching-ants
 // direction-flow overlay on the remaining route.
 const FLOW_SEQ = [
-  [0, 4, 3],
-  [1, 4, 2],
-  [2, 4, 1],
-  [3, 4, 0],
-  [0, 1, 3, 4],
-  [1, 2, 2, 4],
-  [2, 3, 1, 4],
-  [3, 4, 0, 4],
-  [0, 4, 3, 4],
-  [1, 4, 2, 4],
+  [0, 2, 3, 2],
+  [1, 2, 2, 2],
+  [2, 2, 1, 2],
+  [3, 2, 0, 2],
+  [0, 1, 3, 2],
+  [1, 1, 2, 2],
+  [2, 1, 1, 2],
+  [3, 1, 0, 2],
+  [0, 2, 3, 2],
+  [1, 2, 2, 2],
 ];
 
 function pickStyle() {
