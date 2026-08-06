@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2, MapPin, Tag, Clock, Store, Truck, X, Phone } from 
 import { CartProvider, useCart, useReferral } from "@/lib/cartContext";
 import CustomerLayout from "@/components/CustomerLayout";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import PinDropMap from "@/components/PinDropMap";
 import { toast } from "react-hot-toast";
 
 const DROPOFF_OPTIONS = ["Leave at door", "Hand to me", "Meet outside"];
@@ -32,6 +33,7 @@ function CartInner() {
   const [applyingPromo, setApplyingPromo] = useState(false);
   const [restaurant, setRestaurant] = useState(null);
   const [placing, setPlacing] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const [tipPct, setTipPct] = useState(15);
   const [tipCustom, setTipCustom] = useState("");
 
@@ -168,6 +170,20 @@ function CartInner() {
 
   return (
     <CustomerLayout>
+      {showPin && (
+        <PinDropMap
+          onClose={() => setShowPin(false)}
+          onPick={({ lat, lng, street: s, city: c, state: st, zip: z }) => {
+            setLat(lat);
+            setLng(lng);
+            if (s) setStreet(s);
+            if (c) setCity(c);
+            if (st) setStateStr(st);
+            if (z) setZip(z);
+            toast.success("Location set");
+          }}
+        />
+      )}
       <div className="px-4 pt-6 pb-40 min-h-screen">
         <h1 className="text-2xl font-bold mb-1">Your Cart</h1>
         <p className="text-sm text-muted-foreground mb-5">{restaurantName}</p>
@@ -271,6 +287,12 @@ function CartInner() {
                     if (z) setZip(z);
                   }}
                 />
+                <button
+                  onClick={() => setShowPin(true)}
+                  className="w-full h-11 rounded-xl border border-primary/40 bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center gap-2"
+                >
+                  <MapPin className="w-4 h-4" /> Drop pin on map
+                </button>
                 <label className="text-sm font-medium">Apt / Suite</label>
                 <input
                   value={apt}
