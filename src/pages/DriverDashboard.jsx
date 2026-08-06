@@ -385,7 +385,7 @@ export default function DriverDashboard() {
     }
   };
 
-  useVoiceNav({ routeInfo, enabled: voiceEnabled && inDelivery });
+  useVoiceNav({ routeInfo: progress, enabled: voiceEnabled && inDelivery });
   const [stops, setStops] = useState([]);
   const activeKey = activeOrders.map((o) => `${o.id}:${o.status}:${o.pickup_confirmed ? 1 : 0}`).join("|");
   useEffect(() => {

@@ -32,17 +32,16 @@ export function useVoiceNav({ routeInfo, enabled }) {
     const synth = window.speechSynthesis;
     if (!synth) return;
 
-    const step = routeInfo?.steps?.[0];
-    const instruction = step?.maneuver?.instruction;
+    const instruction = routeInfo?.maneuver?.instruction;
     if (!instruction) return;
+    const dist = routeInfo?.toManeuver?.distance;
 
     if (instruction !== lastInstructionRef.current) {
       lastInstructionRef.current = instruction;
       spokenNowRef.current = false;
-      const dist = step.distance;
       const prefix = dist != null && dist <= APPROACH_M ? "Now " : "";
       speak(synth, prefix + instruction);
-    } else if (!spokenNowRef.current && step.distance != null && step.distance <= APPROACH_M) {
+    } else if (!spokenNowRef.current && dist != null && dist <= APPROACH_M) {
       spokenNowRef.current = true;
       speak(synth, "Now " + instruction);
     }

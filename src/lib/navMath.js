@@ -105,7 +105,7 @@ export async function fetchRoute(token, coords) {
   try {
     const path = coords.map((c) => `${c[0]},${c[1]}`).join(";");
     const url =
-      `https://api.mapbox.com/directions/v5/mapbox/driving/${path}` +
+      `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${path}` +
       `?geometries=geojson&overview=full&steps=true&annotations=congestion,duration,distance&access_token=${token}`;
     const res = await fetch(url);
     const data = await res.json();
@@ -119,7 +119,18 @@ export async function fetchRoute(token, coords) {
       (leg.steps || []).forEach((step) => {
         const sc = step.geometry?.coordinates || [];
         if (sc.length < 2) return;
-        features.push(lineFeature(sc, cong[congIdx] || "unknown"));
+        // Split each step into consecutive runs of identical congestion so the
+        // route line colors by real-time traffic at fine granularity.
+        let runStart = 0;
+        for (let k = 0; k < sc.length - 1; k++) {
+          const c = cong[congIdx + k] || "unknown";
+          const nextC = k < sc.length - 2 ? cong[congIdx + k + 1] || "unknown" : null;
+          if (nextC !== c || k === sc.length - 2) {
+            const seg = sc.slice(runStart, k + 2);
+            if (seg.length >= 2) features.push(lineFeature(seg, c));
+            runStart = k + 1;
+          }
+        }
         congIdx += sc.length - 1;
       });
     });

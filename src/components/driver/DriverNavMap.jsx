@@ -36,19 +36,34 @@ const FLOW_SEQ = [
 ];
 
 function pickStyle() {
-  const darkMQ = window.matchMedia?.("(prefers-color-scheme: dark)");
-  const h = new Date().getHours();
-  const night = h < 6 || h >= 19;
-  return darkMQ?.matches || night ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/light-v11";
+  return "mapbox://styles/mapbox/navigation-night-v1";
+}
+
+function fmtArrival(secondsRemaining) {
+  const d = new Date(Date.now() + Math.max(0, secondsRemaining || 0) * 1000);
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function makeSignalEl() {
+  const el = document.createElement("div");
+  el.style.cssText =
+    "width:16px;height:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;" +
+    "background:#0b0b0b;border:1.5px solid #ffffff;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,0.6);";
+  el.innerHTML =
+    '<span style="width:4px;height:4px;border-radius:50%;background:#ef4444"></span>' +
+    '<span style="width:4px;height:4px;border-radius:50%;background:#eab308"></span>' +
+    '<span style="width:4px;height:4px;border-radius:50%;background:#22c55e"></span>';
+  return el;
 }
 
 function makePuckEl() {
   const el = document.createElement("div");
-  el.style.cssText = "width:40px;height:40px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.55));";
+  el.style.cssText = "width:44px;height:44px;display:flex;align-items:center;justify-content:center;";
   el.innerHTML =
-    '<svg width="40" height="40" viewBox="0 0 40 40">' +
-    '<circle cx="20" cy="20" r="15" fill="#FF6B2C" stroke="#ffffff" stroke-width="3"/>' +
-    '<path d="M20 7 L28 27 L20 22 L12 27 Z" fill="#ffffff"/></svg>';
+    '<svg width="44" height="44" viewBox="0 0 44 44">' +
+    '<circle cx="22" cy="22" r="20" fill="rgba(255,107,44,0.14)"/>' +
+    '<circle cx="22" cy="22" r="13" fill="#FF6B2C" stroke="#ffffff" stroke-width="2.5"/>' +
+    '<path d="M22 9 L30 28 L22 24 L14 28 Z" fill="#ffffff"/></svg>';
   return el;
 }
 
@@ -91,6 +106,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const dashStepRef = useRef(0);
   const lastDashRef = useRef(0);
   const arrivedRef = useRef(false);
+  const signalMarkersRef = useRef([]);
+  const lastSignalIdxRef = useRef(-1);
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
 
@@ -108,13 +125,36 @@ const DriverNavMap = forwardRef(function DriverNavMap(
 
   const drawRoute = (res) => {
     routeDataRef.current = res;
+    lastSignalIdxRef.current = -1;
+    if (!res) {
+      signalMarkersRef.current.forEach((m) => m.remove());
+      signalMarkersRef.current = [];
+    }
     if (remainingSrcRef.current)
       remainingSrcRef.current.setData({ type: "FeatureCollection", features: res?.features || [] });
     if (traveledSrcRef.current)
       traveledSrcRef.current.setData({ type: "FeatureCollection", features: [] });
-    onRouteInfo?.(
-      res ? { steps: res.steps, duration: res.duration, distance: res.distance, etaToNext: res.etaToNext } : null
-    );
+    if (res) {
+      const steps = res.steps || [];
+      const firstNext = steps[1] || steps[0];
+      onRouteInfo?.({
+        steps,
+        maneuver: firstNext?.maneuver
+          ? {
+              instruction: firstNext.maneuver.instruction || "Continue on route",
+              type: firstNext.maneuver.type,
+              modifier: firstNext.maneuver.modifier,
+            }
+          : { instruction: "Continue on route" },
+        toManeuver: { distance: steps[0]?.distance || 0, duration: steps[0]?.duration || 0 },
+        trip: { distance: res.distance || 0, duration: res.duration || 0 },
+        arriveAt: fmtArrival(res.duration || 0),
+        duration: res.duration,
+        distance: res.distance,
+      });
+    } else {
+      onRouteInfo?.(null);
+    }
   };
 
   const fetchAndDraw = async (coords) => {
@@ -141,6 +181,30 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     return { lng, lat, bearing: moveBearing ?? headingRef.current };
   };
 
+  const updateSignalMarkers = (maneuverIdx, data) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (maneuverIdx === lastSignalIdxRef.current) return;
+    lastSignalIdxRef.current = maneuverIdx;
+    signalMarkersRef.current.forEach((m) => m.remove());
+    signalMarkersRef.current = [];
+    if (!data?.steps?.length) return;
+    const pts = [];
+    for (let i = Math.max(1, maneuverIdx); i < data.steps.length; i++) {
+      const s = data.steps[i];
+      const t = s?.maneuver?.type;
+      if (!t || t === "depart" || t === "arrive") continue;
+      const loc = s?.maneuver?.location;
+      if (!loc) continue;
+      pts.push(loc);
+      if (pts.length >= 4) break;
+    }
+    pts.forEach((loc) => {
+      const m = new mapboxgl.Marker({ element: makeSignalEl() }).setLngLat(loc).addTo(map);
+      signalMarkersRef.current.push(m);
+    });
+  };
+
   const updateProgress = () => {
     const map = mapRef.current;
     const data = routeDataRef.current;
@@ -162,25 +226,23 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           remainingSrcRef.current.setData({ type: "FeatureCollection", features: [] });
         if (traveledSrcRef.current)
           traveledSrcRef.current.setData({ type: "FeatureCollection", features: [] });
-        const info = {
-          steps: [
-            {
-              maneuver: {
-                instruction: `You've arrived${firstStop.type === "pickup" ? " at pickup" : ""}`,
-                type: "arrive",
-              },
-              distance: 0,
-            },
-          ],
-          duration: 0,
-          distance: 0,
-        };
-        onProgress?.(info);
+        updateSignalMarkers(-1, data);
+        onProgress?.({
+          steps: data?.steps || [],
+          maneuver: {
+            instruction: `You've arrived${firstStop.type === "pickup" ? " at pickup" : ""}`,
+            type: "arrive",
+          },
+          toManeuver: { distance: 0, duration: 0 },
+          trip: { distance: 0, duration: 0 },
+          arriveAt: fmtArrival(0),
+        });
         return;
       }
     }
 
     if (!nav || !data) {
+      updateSignalMarkers(-1, null);
       onProgress?.(null);
       return;
     }
@@ -209,29 +271,56 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     const totalM = data.distance || 0;
     const remainM = Math.max(0, totalM - traveledM);
 
-    let cum = 0;
+    // Advance through the full maneuver list using cumulative step distance.
     const steps = data.steps || [];
-    let curStep = null;
-    let distToTurn = null;
-    for (const s of steps) {
-      cum += s.distance || 0;
+    let cum = 0;
+    let curIdx = -1;
+    let distToTurn = 0;
+    for (let i = 0; i < steps.length; i++) {
+      cum += steps[i].distance || 0;
       if (cum > traveledM + 5) {
-        curStep = s;
-        distToTurn = cum - traveledM;
+        curIdx = i;
+        distToTurn = Math.max(0, cum - traveledM);
         break;
       }
     }
-    if (!curStep && steps.length) {
-      curStep = steps[steps.length - 1];
+    if (curIdx === -1) {
+      curIdx = steps.length - 1;
       distToTurn = 0;
     }
-    const etaRemain = data.duration ? Math.max(0, data.duration * (remainM / (totalM || 1))) : null;
+    const curStep = steps[curIdx];
+    const maneuverIdx = Math.min(curIdx + 1, steps.length - 1);
+    const maneuverStep = steps[maneuverIdx];
+
+    // Time-to-next-maneuver = remaining time within the current step.
+    const stepDist = curStep?.distance || 1;
+    const stepDur = curStep?.duration || 0;
+    const frac = stepDist > 0 ? Math.max(0, Math.min(1, distToTurn / stepDist)) : 0;
+    const etaToTurn = Math.round(stepDur * frac);
+
+    // Total remaining trip duration via cumulative step durations.
+    let cumDur = 0;
+    for (let i = 0; i < curIdx; i++) cumDur += steps[i]?.duration || 0;
+    cumDur += stepDur * (1 - frac);
+    const tripRemainingDur = Math.max(0, (data.duration || 0) - cumDur);
 
     onProgress?.({
-      steps: curStep ? [{ maneuver: curStep.maneuver, distance: distToTurn }] : [],
-      duration: etaRemain,
+      steps,
+      maneuver: maneuverStep?.maneuver
+        ? {
+            instruction: maneuverStep.maneuver.instruction || "Continue on route",
+            type: maneuverStep.maneuver.type,
+            modifier: maneuverStep.maneuver.modifier,
+          }
+        : { instruction: "Continue on route" },
+      toManeuver: { distance: distToTurn, duration: etaToTurn },
+      trip: { distance: remainM, duration: tripRemainingDur },
+      arriveAt: fmtArrival(tripRemainingDur),
+      duration: tripRemainingDur,
       distance: remainM,
     });
+
+    updateSignalMarkers(maneuverIdx, data);
 
     // Off-route reroute (throttled)
     if (proj.dist > REROUTE_THRESHOLD_M && Date.now() - lastRerouteRef.current > REROUTE_COOLDOWN_MS) {
@@ -334,25 +423,11 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       map.addSource("route-remaining", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addSource("route-traveled", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({
-        id: "route-glow-outer",
-        type: "line",
-        source: "route-remaining",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#FF6B2C", "line-width": 34, "line-opacity": 0.1, "line-blur": 16 },
-      });
-      map.addLayer({
-        id: "route-glow",
-        type: "line",
-        source: "route-remaining",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#FF6B2C", "line-width": 22, "line-opacity": 0.22, "line-blur": 7 },
-      });
-      map.addLayer({
         id: "route-casing",
         type: "line",
         source: "route-remaining",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#ffffff", "line-width": 12, "line-opacity": 0.92 },
+        paint: { "line-color": "#ffffff", "line-width": 7, "line-opacity": 0.95 },
       });
       map.addLayer({
         id: "route-core",
@@ -373,7 +448,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
             "#b91c1c",
             "#FF6B2C",
           ],
-          "line-width": 6,
+          "line-width": 5,
           "line-opacity": 1,
         },
       });
@@ -394,7 +469,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
         type: "line",
         source: "route-traveled",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#5a5a66", "line-width": 6, "line-opacity": 0.75 },
+        paint: { "line-color": "#5a5a66", "line-width": 5, "line-opacity": 0.8 },
       });
       remainingSrcRef.current = map.getSource("route-remaining");
       traveledSrcRef.current = map.getSource("route-traveled");
@@ -431,6 +506,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       remainingSrcRef.current = null;
       traveledSrcRef.current = null;
       stopMarkersRef.current = [];
+      signalMarkersRef.current.forEach((m) => m.remove());
+      signalMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -524,6 +601,14 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       pulseRef.current = null;
     }
   }, [navigating]);
+
+  // Re-engage course-up follow when navigation starts
+  useEffect(() => {
+    if (follow) {
+      followingRef.current = true;
+      setShowRecenter(false);
+    }
+  }, [follow]);
 
   useImperativeHandle(ref, () => ({
     recenter,
