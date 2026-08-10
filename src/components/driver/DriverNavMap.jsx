@@ -17,23 +17,8 @@ const REROUTE_COOLDOWN_MS = 20000;
 const MATCH_INTERVAL_MS = 3000;
 const MATCH_MIN_MOVE_M = 15;
 const ARRIVE_M = 45;
-const FOLLOW_OFFSET_M = 95;
+const FOLLOW_OFFSET_M = 70;
 const PROGRESS_INTERVAL_MS = 333;
-
-// Cycling dash pattern (units of line-width) used to animate the marching-ants
-// direction-flow overlay on the remaining route.
-const FLOW_SEQ = [
-  [1, 2, 3, 2],
-  [2, 2, 2, 2],
-  [3, 2, 1, 2],
-  [1, 1, 3, 2],
-  [2, 1, 2, 2],
-  [3, 1, 1, 2],
-  [1, 2, 3, 2],
-  [2, 2, 2, 2],
-  [3, 2, 1, 2],
-  [1, 1, 3, 2],
-];
 
 function pickStyle() {
   return "mapbox://styles/mapbox/navigation-night-v1";
@@ -105,8 +90,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   previewRef.current = !!preview;
   const rafRef = useRef(null);
   const lastProgRef = useRef(0);
-  const dashStepRef = useRef(0);
-  const lastDashRef = useRef(0);
+  const camCenterRef = useRef(null);
   const arrivedRef = useRef(false);
   const signalMarkersRef = useRef([]);
   const lastSignalIdxRef = useRef(-1);
@@ -351,15 +335,15 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     const disp = displayRef.current;
     const tgt = targetRef.current;
     if (disp && tgt) {
-      const k = 0.12;
+      const k = 0.14;
       disp.lng += (tgt.lng - disp.lng) * k;
       disp.lat += (tgt.lat - disp.lat) * k;
       if (tgt.bearing != null) {
         let db = tgt.bearing - (disp.bearing ?? 0);
         while (db > 180) db -= 360;
         while (db < -180) db += 360;
-        if (Math.abs(db) < 3) db = 0;
-        disp.bearing = ((disp.bearing ?? 0) + db * 0.08 + 360) % 360;
+        if (Math.abs(db) < 2.5) db = 0;
+        disp.bearing = ((disp.bearing ?? 0) + db * 0.1 + 360) % 360;
       }
       if (puckRef.current) {
         puckRef.current.setLngLat([disp.lng, disp.lat]);
@@ -369,15 +353,26 @@ const DriverNavMap = forwardRef(function DriverNavMap(
 
       if (followingRef.current && !previewRef.current) {
         const nav = (stopsRef.current || []).length > 0;
-        if (nav) {
-          map.jumpTo({
-            center: offsetForward(disp.lng, disp.lat, disp.bearing || 0, FOLLOW_OFFSET_M),
-            bearing: disp.bearing || 0,
-            pitch: 60,
-            zoom: 17,
-          });
-        } else {
-          map.jumpTo({ center: [disp.lng, disp.lat], bearing: 0, pitch: 0, zoom: 15 });
+        const camCenter = nav
+          ? offsetForward(disp.lng, disp.lat, disp.bearing || 0, FOLLOW_OFFSET_M)
+          : [disp.lng, disp.lat];
+        const camBearing = nav ? disp.bearing || 0 : 0;
+        const last = camCenterRef.current;
+        const moved = !last || haversineM(last.lat, last.lng, camCenter[1], camCenter[0]) > 0.6;
+        let turned = !last;
+        if (last) {
+          let db = camBearing - last.bearing;
+          while (db > 180) db -= 360;
+          while (db < -180) db += 360;
+          if (Math.abs(db) > 0.4) turned = true;
+        }
+        if (moved || turned) {
+          camCenterRef.current = { lng: camCenter[0], lat: camCenter[1], bearing: camBearing };
+          if (nav) {
+            map.jumpTo({ center: camCenter, bearing: camBearing, pitch: 60, zoom: 17 });
+          } else {
+            map.jumpTo({ center: camCenter, bearing: 0, pitch: 0, zoom: 15 });
+          }
         }
       }
     }
@@ -392,6 +387,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const recenter = () => {
     followingRef.current = true;
     setShowRecenter(false);
+    camCenterRef.current = null;
     const map = mapRef.current;
     const disp = displayRef.current;
     if (!map || !disp) return;
@@ -434,25 +430,32 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       remainingSrcRef.current = map.getSource("route-remaining");
       traveledSrcRef.current = map.getSource("route-traveled");
       map.addLayer({
-        id: "route-casing",
+        id: "route-traveled-casing",
         type: "line",
-        source: "route-remaining",
+        source: "route-traveled",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#000000", "line-width": 10, "line-opacity": 0.3 },
-      });
-      map.addLayer({
-        id: "route-core",
-        type: "line",
-        source: "route-remaining",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#FF6B2C", "line-width": 6, "line-opacity": 1 },
+        paint: { "line-color": "#000000", "line-width": 10, "line-opacity": 0.2 },
       });
       map.addLayer({
         id: "route-traveled",
         type: "line",
         source: "route-traveled",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#4a4a52", "line-width": 6, "line-opacity": 0.6 },
+        paint: { "line-color": "#3a3a44", "line-width": 5, "line-opacity": 0.85 },
+      });
+      map.addLayer({
+        id: "route-casing",
+        type: "line",
+        source: "route-remaining",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#ffffff", "line-width": 10, "line-opacity": 0.85 },
+      });
+      map.addLayer({
+        id: "route-core",
+        type: "line",
+        source: "route-remaining",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#FF6B2C", "line-width": 5, "line-opacity": 1 },
       });
 
       puckRef.current = new mapboxgl.Marker({ element: makePuckEl(), rotationAlignment: "map" })
@@ -600,6 +603,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     if (follow) {
       followingRef.current = true;
       setShowRecenter(false);
+      camCenterRef.current = null;
     }
   }, [follow]);
 
