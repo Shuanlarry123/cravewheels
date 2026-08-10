@@ -21,6 +21,7 @@ import {
   Check,
   X,
   Loader2,
+  ArrowLeftRight,
 } from "lucide-react";
 import CustomerLayout from "@/components/CustomerLayout";
 import { CartProvider } from "@/lib/cartContext";
@@ -92,6 +93,7 @@ function AccountInner() {
   const [lite, setLite] = useLiteMode();
   const isAdmin = useAdminRole();
   const [deleting, setDeleting] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const fileRef = useRef(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -153,6 +155,18 @@ function AccountInner() {
     } catch {
       toast.error("Failed to delete account");
       setDeleting(false);
+    }
+  };
+
+  const goCustomer = async () => {
+    setSwitching(true);
+    try {
+      await base44.auth.updateMe({ role: "customer" });
+      navigate("/");
+    } catch {
+      navigate("/");
+    } finally {
+      setSwitching(false);
     }
   };
 
@@ -290,6 +304,23 @@ function AccountInner() {
           {/* Admin */}
           {isAdmin && (
             <NavRow to="/admin-dashboard" icon={Shield} title="Admin Dashboard" desc="Review applications & monitor performance" />
+          )}
+
+          {/* Switch mode (drivers only) */}
+          {user?.role === "driver" && (
+            <NavRow
+              icon={ArrowLeftRight}
+              title="Switch to Customer Mode"
+              desc="Return to the customer app"
+              onClick={switching ? undefined : goCustomer}
+              right={
+                switching ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground shrink-0" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                )
+              }
+            />
           )}
 
           {/* Log Out */}
