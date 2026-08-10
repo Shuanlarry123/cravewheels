@@ -390,20 +390,15 @@ const DriverNavMap = forwardRef(function DriverNavMap(
 
       if (followingRef.current && !previewRef.current) {
         const nav = (stopsRef.current || []).length > 0;
-        const now2 = performance.now();
-        if (now2 - lastEaseRef.current > 400) {
-          lastEaseRef.current = now2;
-          if (nav) {
-            map.easeTo({
-              center: offsetForward(disp.lng, disp.lat, disp.bearing || 0, FOLLOW_OFFSET_M),
-              bearing: disp.bearing || 0,
-              pitch: 60,
-              zoom: 17,
-              duration: 600,
-            });
-          } else {
-            map.easeTo({ center: [disp.lng, disp.lat], bearing: 0, pitch: 0, zoom: 15, duration: 600 });
-          }
+        if (nav) {
+          map.jumpTo({
+            center: offsetForward(disp.lng, disp.lat, disp.bearing || 0, FOLLOW_OFFSET_M),
+            bearing: disp.bearing || 0,
+            pitch: 60,
+            zoom: 17,
+          });
+        } else {
+          map.jumpTo({ center: [disp.lng, disp.lat], bearing: 0, pitch: 0, zoom: 15 });
         }
       }
     }
