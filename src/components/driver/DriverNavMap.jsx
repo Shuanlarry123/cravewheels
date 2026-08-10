@@ -351,14 +351,15 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     const disp = displayRef.current;
     const tgt = targetRef.current;
     if (disp && tgt) {
-      const k = 0.14;
+      const k = 0.12;
       disp.lng += (tgt.lng - disp.lng) * k;
       disp.lat += (tgt.lat - disp.lat) * k;
       if (tgt.bearing != null) {
         let db = tgt.bearing - (disp.bearing ?? 0);
         while (db > 180) db -= 360;
         while (db < -180) db += 360;
-        disp.bearing = ((disp.bearing ?? 0) + db * 0.18 + 360) % 360;
+        if (Math.abs(db) < 3) db = 0;
+        disp.bearing = ((disp.bearing ?? 0) + db * 0.08 + 360) % 360;
       }
       if (puckRef.current) {
         puckRef.current.setLngLat([disp.lng, disp.lat]);
@@ -385,14 +386,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       lastProgRef.current = now;
       updateProgress();
     }
-    if (now - lastDashRef.current > 80) {
-      lastDashRef.current = now;
-      dashStepRef.current = (dashStepRef.current + 1) % FLOW_SEQ.length;
-      const m = mapRef.current;
-      if (m && m.getLayer("route-flow")) {
-        m.setPaintProperty("route-flow", "line-dasharray", FLOW_SEQ[dashStepRef.current]);
-      }
-    }
+
   };
 
   const recenter = () => {
@@ -444,54 +438,22 @@ const DriverNavMap = forwardRef(function DriverNavMap(
         type: "line",
         source: "route-remaining",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.95 },
+        paint: { "line-color": "#000000", "line-width": 10, "line-opacity": 0.3 },
       });
       map.addLayer({
         id: "route-core",
         type: "line",
         source: "route-remaining",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: {
-          "line-color": [
-            "match",
-            ["get", "congestion"],
-            "low",
-            "#22c55e",
-            "moderate",
-            "#eab308",
-            "heavy",
-            "#ef4444",
-            "severe",
-            "#b91c1c",
-            "#FF6B2C",
-          ],
-          "line-width": 6,
-          "line-opacity": 1,
-        },
+        paint: { "line-color": "#FF6B2C", "line-width": 6, "line-opacity": 1 },
       });
       map.addLayer({
         id: "route-traveled",
         type: "line",
         source: "route-traveled",
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#5a5a66", "line-width": 6, "line-opacity": 0.8 },
+        paint: { "line-color": "#4a4a52", "line-width": 6, "line-opacity": 0.6 },
       });
-      try {
-        map.addLayer({
-          id: "route-flow",
-          type: "line",
-          source: "route-remaining",
-          layout: { "line-join": "round", "line-cap": "round" },
-          paint: {
-            "line-color": "#ffffff",
-            "line-width": 2,
-            "line-opacity": 0.5,
-            "line-dasharray": FLOW_SEQ[0],
-          },
-        });
-      } catch (e) {
-        // Non-critical flow overlay; route still renders without it.
-      }
 
       puckRef.current = new mapboxgl.Marker({ element: makePuckEl(), rotationAlignment: "map" })
         .setLngLat([startLng, startLat])
