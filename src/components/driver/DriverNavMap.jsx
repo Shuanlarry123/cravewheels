@@ -29,15 +29,26 @@ function fmtArrival(secondsRemaining) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function makeSignalEl() {
+function makeTrafficLightEl() {
   const el = document.createElement("div");
   el.style.cssText =
-    "width:16px;height:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;" +
-    "background:#0b0b0b;border:1.5px solid #ffffff;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,0.6);";
+    "width:14px;height:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5px;" +
+    "background:#0b0b0b;border:1.5px solid #ffffff;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,0.7);padding:2px 0;";
   el.innerHTML =
-    '<span style="width:4px;height:4px;border-radius:50%;background:#ef4444"></span>' +
-    '<span style="width:4px;height:4px;border-radius:50%;background:#eab308"></span>' +
-    '<span style="width:4px;height:4px;border-radius:50%;background:#22c55e"></span>';
+    '<span style="width:5px;height:5px;border-radius:50%;background:#ef4444;box-shadow:0 0 3px #ef4444;"></span>' +
+    '<span style="width:5px;height:5px;border-radius:50%;background:#3a3a3a;"></span>' +
+    '<span style="width:5px;height:5px;border-radius:50%;background:#3a3a3a;"></span>';
+  return el;
+}
+
+function makeStopSignEl() {
+  const el = document.createElement("div");
+  el.style.cssText = "width:20px;height:20px;display:flex;align-items:center;justify-content:center;";
+  el.innerHTML =
+    '<svg width="20" height="20" viewBox="0 0 20 20">' +
+    '<polygon points="6,1 14,1 19,6 19,14 14,19 6,19 1,14 1,6" fill="#dc2626" stroke="#ffffff" stroke-width="1.5"/>' +
+    '<text x="10" y="12.5" text-anchor="middle" fill="#ffffff" font-size="5" font-weight="800" font-family="Arial,sans-serif">STOP</text>' +
+    "</svg>";
   return el;
 }
 
@@ -90,10 +101,10 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   previewRef.current = !!preview;
   const rafRef = useRef(null);
   const lastProgRef = useRef(0);
-  const camCenterRef = useRef(null);
+  const lastEaseRef = useRef(0);
   const arrivedRef = useRef(false);
-  const signalMarkersRef = useRef([]);
-  const lastSignalIdxRef = useRef(-1);
+  const trafficMarkersRef = useRef([]);
+  const lastTrafficQueryRef = useRef(0);
   const hadLocRef = useRef(false);
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
@@ -112,10 +123,9 @@ const DriverNavMap = forwardRef(function DriverNavMap(
 
   const drawRoute = (res) => {
     routeDataRef.current = res;
-    lastSignalIdxRef.current = -1;
     if (!res) {
-      signalMarkersRef.current.forEach((m) => m.remove());
-      signalMarkersRef.current = [];
+      trafficMarkersRef.current.forEach((m) => m.remove());
+      trafficMarkersRef.current = [];
     }
     if (remainingSrcRef.current)
       remainingSrcRef.current.setData({ type: "FeatureCollection", features: res?.features || [] });
@@ -134,6 +144,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           mapRef.current.fitBounds(bounds, { padding: 70, pitch: 0, bearing: 0, duration: 600 });
         }
       }
+      updateTrafficSignals();
       const steps = res.steps || [];
       const firstNext = steps[1] || steps[0];
       onRouteInfo?.({
@@ -180,27 +191,50 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     return { lng, lat, bearing: moveBearing ?? headingRef.current };
   };
 
-  const updateSignalMarkers = (maneuverIdx, data) => {
+  const updateTrafficSignals = () => {
     const map = mapRef.current;
-    if (!map) return;
-    if (maneuverIdx === lastSignalIdxRef.current) return;
-    lastSignalIdxRef.current = maneuverIdx;
-    signalMarkersRef.current.forEach((m) => m.remove());
-    signalMarkersRef.current = [];
-    if (!data?.steps?.length) return;
-    const pts = [];
-    for (let i = Math.max(1, maneuverIdx); i < data.steps.length; i++) {
-      const s = data.steps[i];
-      const t = s?.maneuver?.type;
-      if (!t || t === "depart" || t === "arrive") continue;
-      const loc = s?.maneuver?.location;
-      if (!loc) continue;
-      pts.push(loc);
-      if (pts.length >= 4) break;
+    const data = routeDataRef.current;
+    if (!map || !data?.features?.length) return;
+
+    // Query the map's vector tiles for traffic signal and stop sign features
+    let features = [];
+    try {
+      const sf = map.querySourceFeatures("composite", { sourceLayer: "road" });
+      features = sf.filter((f) => {
+        const cls = f.properties?.class || "";
+        return cls === "traffic_signal" || cls === "stop";
+      });
+    } catch {}
+    if (!features.length) {
+      try {
+        const all = map.queryRenderedFeatures();
+        features = all.filter((f) => {
+          const cls = f.properties?.class || "";
+          return cls === "traffic_signal" || cls === "stop";
+        });
+      } catch {}
     }
-    pts.forEach((loc) => {
-      const m = new mapboxgl.Marker({ element: makeSignalEl() }).setLngLat(loc).addTo(map);
-      signalMarkersRef.current.push(m);
+    if (!features.length) return;
+
+    // Deduplicate and keep only those near the route line
+    const seen = new Set();
+    const nearRoute = [];
+    features.forEach((f) => {
+      const loc = f.geometry?.coordinates;
+      if (!loc) return;
+      const key = `${loc[0].toFixed(6)},${loc[1].toFixed(6)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const proj = projectOnRoute(data.features, loc[0], loc[1]);
+      if (proj.dist < 25) nearRoute.push({ loc, type: f.properties.class });
+    });
+
+    trafficMarkersRef.current.forEach((m) => m.remove());
+    trafficMarkersRef.current = [];
+    nearRoute.slice(0, 12).forEach((s) => {
+      const el = s.type === "traffic_signal" ? makeTrafficLightEl() : makeStopSignEl();
+      const m = new mapboxgl.Marker({ element: el }).setLngLat(s.loc).addTo(map);
+      trafficMarkersRef.current.push(m);
     });
   };
 
@@ -225,7 +259,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           remainingSrcRef.current.setData({ type: "FeatureCollection", features: [] });
         if (traveledSrcRef.current)
           traveledSrcRef.current.setData({ type: "FeatureCollection", features: [] });
-        updateSignalMarkers(-1, data);
+        trafficMarkersRef.current.forEach((m) => m.remove());
+        trafficMarkersRef.current = [];
         onProgress?.({
           steps: data?.steps || [],
           maneuver: {
@@ -241,7 +276,6 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     }
 
     if (!nav || !data) {
-      updateSignalMarkers(-1, null);
       onProgress?.(null);
       return;
     }
@@ -319,7 +353,10 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       distance: remainM,
     });
 
-    updateSignalMarkers(maneuverIdx, data);
+    if (Date.now() - lastTrafficQueryRef.current > 5000) {
+      lastTrafficQueryRef.current = Date.now();
+      updateTrafficSignals();
+    }
 
     // Off-route reroute (throttled)
     if (proj.dist > REROUTE_THRESHOLD_M && Date.now() - lastRerouteRef.current > REROUTE_COOLDOWN_MS) {
@@ -353,25 +390,19 @@ const DriverNavMap = forwardRef(function DriverNavMap(
 
       if (followingRef.current && !previewRef.current) {
         const nav = (stopsRef.current || []).length > 0;
-        const camCenter = nav
-          ? offsetForward(disp.lng, disp.lat, disp.bearing || 0, FOLLOW_OFFSET_M)
-          : [disp.lng, disp.lat];
-        const camBearing = nav ? disp.bearing || 0 : 0;
-        const last = camCenterRef.current;
-        const moved = !last || haversineM(last.lat, last.lng, camCenter[1], camCenter[0]) > 0.6;
-        let turned = !last;
-        if (last) {
-          let db = camBearing - last.bearing;
-          while (db > 180) db -= 360;
-          while (db < -180) db += 360;
-          if (Math.abs(db) > 0.4) turned = true;
-        }
-        if (moved || turned) {
-          camCenterRef.current = { lng: camCenter[0], lat: camCenter[1], bearing: camBearing };
+        const now2 = performance.now();
+        if (now2 - lastEaseRef.current > 400) {
+          lastEaseRef.current = now2;
           if (nav) {
-            map.jumpTo({ center: camCenter, bearing: camBearing, pitch: 60, zoom: 17 });
+            map.easeTo({
+              center: offsetForward(disp.lng, disp.lat, disp.bearing || 0, FOLLOW_OFFSET_M),
+              bearing: disp.bearing || 0,
+              pitch: 60,
+              zoom: 17,
+              duration: 600,
+            });
           } else {
-            map.jumpTo({ center: camCenter, bearing: 0, pitch: 0, zoom: 15 });
+            map.easeTo({ center: [disp.lng, disp.lat], bearing: 0, pitch: 0, zoom: 15, duration: 600 });
           }
         }
       }
@@ -387,7 +418,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
   const recenter = () => {
     followingRef.current = true;
     setShowRecenter(false);
-    camCenterRef.current = null;
+    lastEaseRef.current = 0;
     const map = mapRef.current;
     const disp = displayRef.current;
     if (!map || !disp) return;
@@ -475,6 +506,13 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       setShowRecenter(true);
     });
 
+    map.on("idle", () => {
+      if (Date.now() - lastTrafficQueryRef.current > 3000) {
+        lastTrafficQueryRef.current = Date.now();
+        updateTrafficSignals();
+      }
+    });
+
     const loop = () => {
       stepFrame();
       rafRef.current = requestAnimationFrame(loop);
@@ -490,8 +528,8 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       remainingSrcRef.current = null;
       traveledSrcRef.current = null;
       stopMarkersRef.current = [];
-      signalMarkersRef.current.forEach((m) => m.remove());
-      signalMarkersRef.current = [];
+      trafficMarkersRef.current.forEach((m) => m.remove());
+      trafficMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -603,7 +641,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     if (follow) {
       followingRef.current = true;
       setShowRecenter(false);
-      camCenterRef.current = null;
+      lastEaseRef.current = 0;
     }
   }, [follow]);
 
