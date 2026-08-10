@@ -8,7 +8,7 @@ const nav = [
   { to: "/driver/earnings", icon: Wallet, label: "Earnings" },
   { to: "/driver/history", icon: History, label: "History" },
   { to: "/driver/profile", icon: User, label: "Profile" },
-  { to: "/account", icon: CircleUser, label: "Account" },
+  { to: "/driver/settings", icon: CircleUser, label: "Account" },
 ];
 
 export default function DriverLayout({ children }) {
