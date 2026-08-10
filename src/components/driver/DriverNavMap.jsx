@@ -144,7 +144,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
           mapRef.current.fitBounds(bounds, { padding: 70, pitch: 0, bearing: 0, duration: 600 });
         }
       }
-      updateTrafficSignals();
+      updateTrafficMarkers(res.trafficControls || []);
       const steps = res.steps || [];
       const firstNext = steps[1] || steps[0];
       onRouteInfo?.({
@@ -191,49 +191,19 @@ const DriverNavMap = forwardRef(function DriverNavMap(
     return { lng, lat, bearing: moveBearing ?? headingRef.current };
   };
 
-  const updateTrafficSignals = () => {
+  const updateTrafficMarkers = (controls) => {
     const map = mapRef.current;
-    const data = routeDataRef.current;
-    if (!map || !data?.features?.length) return;
-
-    // Query the map's vector tiles for traffic signal and stop sign features
-    let features = [];
-    try {
-      const sf = map.querySourceFeatures("composite", { sourceLayer: "road" });
-      features = sf.filter((f) => {
-        const cls = f.properties?.class || "";
-        return cls === "traffic_signal" || cls === "stop";
-      });
-    } catch {}
-    if (!features.length) {
-      try {
-        const all = map.queryRenderedFeatures();
-        features = all.filter((f) => {
-          const cls = f.properties?.class || "";
-          return cls === "traffic_signal" || cls === "stop";
-        });
-      } catch {}
-    }
-    if (!features.length) return;
-
-    // Deduplicate and keep only those near the route line
-    const seen = new Set();
-    const nearRoute = [];
-    features.forEach((f) => {
-      const loc = f.geometry?.coordinates;
-      if (!loc) return;
-      const key = `${loc[0].toFixed(6)},${loc[1].toFixed(6)}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      const proj = projectOnRoute(data.features, loc[0], loc[1]);
-      if (proj.dist < 25) nearRoute.push({ loc, type: f.properties.class });
-    });
-
+    if (!map) return;
     trafficMarkersRef.current.forEach((m) => m.remove());
     trafficMarkersRef.current = [];
-    nearRoute.slice(0, 12).forEach((s) => {
-      const el = s.type === "traffic_signal" ? makeTrafficLightEl() : makeStopSignEl();
-      const m = new mapboxgl.Marker({ element: el }).setLngLat(s.loc).addTo(map);
+    const seen = new Set();
+    controls.forEach((c) => {
+      if (!c.loc) return;
+      const key = `${c.loc[0].toFixed(6)},${c.loc[1].toFixed(6)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const el = c.type === "traffic_signal" ? makeTrafficLightEl() : makeStopSignEl();
+      const m = new mapboxgl.Marker({ element: el }).setLngLat(c.loc).addTo(map);
       trafficMarkersRef.current.push(m);
     });
   };
@@ -352,11 +322,6 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       duration: tripRemainingDur,
       distance: remainM,
     });
-
-    if (Date.now() - lastTrafficQueryRef.current > 5000) {
-      lastTrafficQueryRef.current = Date.now();
-      updateTrafficSignals();
-    }
 
     // Off-route reroute (throttled)
     if (proj.dist > REROUTE_THRESHOLD_M && Date.now() - lastRerouteRef.current > REROUTE_COOLDOWN_MS) {
@@ -501,12 +466,7 @@ const DriverNavMap = forwardRef(function DriverNavMap(
       setShowRecenter(true);
     });
 
-    map.on("idle", () => {
-      if (Date.now() - lastTrafficQueryRef.current > 3000) {
-        lastTrafficQueryRef.current = Date.now();
-        updateTrafficSignals();
-      }
-    });
+
 
     const loop = () => {
       stepFrame();

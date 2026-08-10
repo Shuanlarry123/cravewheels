@@ -138,6 +138,27 @@ export async function fetchRoute(token, coords) {
       const full = route.geometry?.coordinates || [];
       if (full.length >= 2) features.push(lineFeature(full, "unknown"));
     }
+    // Extract traffic-control locations from step intersections — far more
+    // reliable than querying rendered vector tiles, which don't consistently
+    // expose traffic_signal/stop features across map styles.
+    const trafficControls = [];
+    const tcSeen = new Set();
+    legs.forEach((leg) => {
+      (leg.steps || []).forEach((step) => {
+        (step.intersections || []).forEach((inter) => {
+          if (!inter.location) return;
+          const isSignal =
+            inter.traffic_signal === true ||
+            (inter.classes && inter.classes.includes("traffic_signals"));
+          if (isSignal) {
+            const key = `${inter.location[0].toFixed(6)},${inter.location[1].toFixed(6)}`;
+            if (tcSeen.has(key)) return;
+            tcSeen.add(key);
+            trafficControls.push({ loc: inter.location, type: "traffic_signal" });
+          }
+        });
+      });
+    });
     return {
       features,
       coordinates: route.geometry?.coordinates || [],
@@ -145,6 +166,7 @@ export async function fetchRoute(token, coords) {
       duration: route.duration,
       distance: route.distance,
       etaToNext: legs[0]?.duration,
+      trafficControls,
     };
   } catch {
     return null;
