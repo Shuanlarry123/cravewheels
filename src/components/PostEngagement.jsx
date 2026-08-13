@@ -146,7 +146,7 @@ export default function PostEngagement({ post, active }) {
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/post/${post.id}`;
+    const url = `${window.location.origin}/functions/ogPreview?type=post&id=${post.id}`;
     const title = `${post.author_name || "Cravewheels"} on Cravewheels`;
     let copied = false;
     try {

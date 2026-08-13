@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { uploadFileWithProgress } from "@/lib/uploadVideo";
+import { generateVideoThumbnail } from "@/lib/generateThumbnail";
 import { Loader2, Upload, Video, Send } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -39,6 +40,17 @@ export default function PostComposer({
       setProgress(0);
       const { file_url } = await uploadFileWithProgress(file, setProgress);
       setVideoUrl(file_url);
+
+      // Auto-generate a thumbnail from the video for link previews & poster
+      try {
+        const thumbBlob = await generateVideoThumbnail(file);
+        const { file_url: thumbFileUrl } = await base44.integrations.Core.UploadFile({
+          file: new File([thumbBlob], "thumbnail.jpg", { type: "image/jpeg" }),
+        });
+        setThumbUrl(thumbFileUrl);
+      } catch {
+        /* thumbnail generation failed — not critical, post still works */
+      }
     } catch (err) {
       toast.error(
         err?.message === "timeout"

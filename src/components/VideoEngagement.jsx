@@ -77,7 +77,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/item/${item.id}`;
+    const url = `${window.location.origin}/functions/ogPreview?type=item&id=${item.id}`;
     const title = `${item.name} — ${item.restaurant_name || "Cravewheels"}`;
     let copied = false;
 

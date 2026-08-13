@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { uploadFileWithProgress } from "@/lib/uploadVideo";
+import { generateVideoThumbnail } from "@/lib/generateThumbnail";
 import { Loader2, Plus, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
 import SelectSheet from "@/components/SelectSheet";
@@ -28,12 +29,27 @@ export default function MenuItemForm({ restaurant, onCreated }) {
     try {
       setProgress(0);
       const { file_url } = await uploadFileWithProgress(video, setProgress);
+
+      // Auto-generate a thumbnail from the video if none was provided manually
+      let thumbnailUrl = form.thumbnail_url;
+      if (!thumbnailUrl) {
+        try {
+          const thumbBlob = await generateVideoThumbnail(video);
+          const { file_url: thumbFileUrl } = await base44.integrations.Core.UploadFile({
+            file: new File([thumbBlob], "thumbnail.jpg", { type: "image/jpeg" }),
+          });
+          thumbnailUrl = thumbFileUrl;
+        } catch {
+          /* thumbnail generation failed — not critical */
+        }
+      }
+
       await base44.entities.MenuItem.create({
         name: form.name,
         description: form.description,
         price: Number(form.price) || 0,
         category: form.category,
-        thumbnail_url: form.thumbnail_url,
+        thumbnail_url: thumbnailUrl,
         video_url: file_url,
         restaurant_id: restaurant.id,
         restaurant_name: restaurant.name,
