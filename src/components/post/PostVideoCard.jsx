@@ -98,7 +98,7 @@ export default function PostVideoCard({ post, active, muted, lite }) {
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40 pointer-events-none" />
 
-      <div className="absolute left-0 right-0 bottom-24 px-4 pb-2 z-20">
+      <div className="absolute left-0 right-0 bottom-24 pl-4 pr-20 pb-2 z-20">
         <div className="mb-3">
           <AuthorChip />
         </div>

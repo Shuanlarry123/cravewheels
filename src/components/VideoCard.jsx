@@ -81,7 +81,7 @@ export default function VideoCard({ item, distanceKm, etaMin, onAdd, active, mut
       <VideoEngagement item={item} active={active} onAdd={onAdd} ordersCount={ordersCount} orderInfoByUser={orderInfoByUser} />
 
       {/* Bottom info */}
-      <div className="absolute left-0 right-0 bottom-24 px-4 pb-2 z-20">
+      <div className="absolute left-0 right-0 bottom-24 pl-4 pr-20 pb-2 z-20">
         <div className="flex items-center gap-2 mb-3">
           <Link
             to={`/restaurant/${item.restaurant_id}`}
