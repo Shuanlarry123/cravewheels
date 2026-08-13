@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Heart, MessageCircle, Send, Bookmark, Share2, UserPlus, UserCheck, X, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { getShareOrigin } from "@/lib/shareOrigin";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -146,7 +147,7 @@ export default function PostEngagement({ post, active }) {
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/functions/ogPreview?type=post&id=${post.id}`;
+    const url = `${getShareOrigin()}/functions/ogPreview?type=post&id=${post.id}`;
     const title = `${post.author_name || "Cravewheels"} on Cravewheels`;
     let copied = false;
     try {

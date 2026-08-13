@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Heart, MessageCircle, Send, X, Plus, Loader2, Share2, Bookmark } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { getShareOrigin } from "@/lib/shareOrigin";
 import { useOrderedItems } from "@/lib/useOrderedItems";
 import StarRating from "@/components/comments/StarRating";
 import VerifiedComment from "@/components/comments/VerifiedComment";
@@ -77,7 +78,7 @@ export default function VideoEngagement({ item, active, onAdd, ordersCount, orde
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/functions/ogPreview?type=item&id=${item.id}`;
+    const url = `${getShareOrigin()}/functions/ogPreview?type=item&id=${item.id}`;
     const title = `${item.name} — ${item.restaurant_name || "Cravewheels"}`;
     let copied = false;
 
