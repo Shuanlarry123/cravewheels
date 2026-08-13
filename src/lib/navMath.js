@@ -147,15 +147,19 @@ export async function fetchRoute(token, coords) {
       (leg.steps || []).forEach((step) => {
         (step.intersections || []).forEach((inter) => {
           if (!inter.location) return;
+          // Only real intersections: 3+ bearings means 3+ road segments meet
+          const bearings = inter.bearings || [];
+          if (bearings.length < 3) return;
+          const key = `${inter.location[0].toFixed(5)},${inter.location[1].toFixed(5)}`;
+          if (tcSeen.has(key)) return;
+          tcSeen.add(key);
           const isSignal =
             inter.traffic_signal === true ||
             (inter.classes && inter.classes.includes("traffic_signals"));
-          if (isSignal) {
-            const key = `${inter.location[0].toFixed(6)},${inter.location[1].toFixed(6)}`;
-            if (tcSeen.has(key)) return;
-            tcSeen.add(key);
-            trafficControls.push({ loc: inter.location, type: "traffic_signal" });
-          }
+          trafficControls.push({
+            loc: inter.location,
+            type: isSignal ? "traffic_signal" : "stop",
+          });
         });
       });
     });
