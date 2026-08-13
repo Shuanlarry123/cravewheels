@@ -4,7 +4,7 @@ import { appParams } from "@/lib/app-params";
 // WhatsApp, etc.) can reach the OG preview function without auth.
 // In the builder preview, window.location.origin points to the dispatcher
 // worker which requires authentication, breaking link previews.
-const PRODUCTION_URL = "https://crave-reel-feed.base44.app";
+const PRODUCTION_URL = "https://cravewheels.com";
 
 export function getShareOrigin() {
   return appParams.appBaseUrl || PRODUCTION_URL;
