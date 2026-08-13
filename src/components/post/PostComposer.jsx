@@ -27,12 +27,25 @@ export default function PostComposer({
   const pickVideo = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Video too large — max 100MB. Try a shorter clip.");
+      e.target.value = "";
+      return;
+    }
     try {
       setUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const upload = base44.integrations.Core.UploadFile({ file });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 120000)
+      );
+      const { file_url } = await Promise.race([upload, timeout]);
       setVideoUrl(file_url);
-    } catch {
-      toast.error("Video upload failed");
+    } catch (err) {
+      toast.error(
+        err?.message === "timeout"
+          ? "Upload timed out — try a shorter or smaller video"
+          : "Video upload failed"
+      );
     } finally {
       setUploading(false);
     }

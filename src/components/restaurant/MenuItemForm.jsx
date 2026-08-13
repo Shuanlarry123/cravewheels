@@ -24,7 +24,11 @@ export default function MenuItemForm({ restaurant, onCreated }) {
     }
     setSaving(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: video });
+      const upload = base44.integrations.Core.UploadFile({ file: video });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 120000)
+      );
+      const { file_url } = await Promise.race([upload, timeout]);
       await base44.entities.MenuItem.create({
         name: form.name,
         description: form.description,
@@ -51,8 +55,12 @@ export default function MenuItemForm({ restaurant, onCreated }) {
       setVideo(null);
       setModifierGroups([]);
       onCreated();
-    } catch {
-      toast.error("Failed to add item");
+    } catch (err) {
+      toast.error(
+        err?.message === "timeout"
+          ? "Upload timed out — try a shorter or smaller video"
+          : "Failed to add item"
+      );
     } finally {
       setSaving(false);
     }
@@ -69,7 +77,15 @@ export default function MenuItemForm({ restaurant, onCreated }) {
           <input
             type="file"
             accept="video/*"
-            onChange={(e) => setVideo(e.target.files?.[0] || null)}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f && f.size > 100 * 1024 * 1024) {
+                toast.error("Video too large — max 100MB. Try a shorter clip.");
+                e.target.value = "";
+                return;
+              }
+              setVideo(f || null);
+            }}
             className="w-full text-xs text-muted-foreground file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-primary/15 file:text-primary file:text-xs file:font-semibold"
           />
         </label>
