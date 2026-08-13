@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadFileWithProgress } from "@/lib/uploadVideo";
 import { Loader2, Upload, Video, Send } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -19,6 +20,7 @@ export default function PostComposer({
   const [videoUrl, setVideoUrl] = useState("");
   const [thumbUrl, setThumbUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [thumbUploading, setThumbUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const videoRef = useRef(null);
@@ -34,11 +36,8 @@ export default function PostComposer({
     }
     try {
       setUploading(true);
-      const upload = base44.integrations.Core.UploadFile({ file });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 120000)
-      );
-      const { file_url } = await Promise.race([upload, timeout]);
+      setProgress(0);
+      const { file_url } = await uploadFileWithProgress(file, setProgress);
       setVideoUrl(file_url);
     } catch (err) {
       toast.error(
@@ -48,6 +47,7 @@ export default function PostComposer({
       );
     } finally {
       setUploading(false);
+      setProgress(0);
     }
   };
 
@@ -107,7 +107,7 @@ export default function PostComposer({
           className="flex-1 h-10 rounded-xl bg-background border border-border text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-          {videoUrl ? "Change video" : "Upload video"}
+          {uploading && progress > 0 ? `Uploading ${progress}%` : videoUrl ? "Change video" : "Upload video"}
         </button>
         <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={pickVideo} />
 

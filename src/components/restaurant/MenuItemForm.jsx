@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadFileWithProgress } from "@/lib/uploadVideo";
 import { Loader2, Plus, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
 import SelectSheet from "@/components/SelectSheet";
@@ -12,6 +13,7 @@ export default function MenuItemForm({ restaurant, onCreated }) {
   const [form, setForm] = useState({ name: "", description: "", price: "", category: "", thumbnail_url: "" });
   const [video, setVideo] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [modifierGroups, setModifierGroups] = useState([]);
 
@@ -24,11 +26,8 @@ export default function MenuItemForm({ restaurant, onCreated }) {
     }
     setSaving(true);
     try {
-      const upload = base44.integrations.Core.UploadFile({ file: video });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 120000)
-      );
-      const { file_url } = await Promise.race([upload, timeout]);
+      setProgress(0);
+      const { file_url } = await uploadFileWithProgress(video, setProgress);
       await base44.entities.MenuItem.create({
         name: form.name,
         description: form.description,
@@ -54,6 +53,7 @@ export default function MenuItemForm({ restaurant, onCreated }) {
       setForm({ name: "", description: "", price: "", category: "", thumbnail_url: "" });
       setVideo(null);
       setModifierGroups([]);
+      setProgress(0);
       onCreated();
     } catch (err) {
       toast.error(
@@ -117,7 +117,7 @@ export default function MenuItemForm({ restaurant, onCreated }) {
           <ModifierGroupsEditor value={modifierGroups} onChange={setModifierGroups} />
         </div>
         <button onClick={submit} disabled={saving} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-          {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Plus className="w-4 h-4" /> Add to menu</>}
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> {progress > 0 ? `Uploading ${progress}%` : "Uploading..."}</> : <><Plus className="w-4 h-4" /> Add to menu</>}
         </button>
       </div>
     </div>
