@@ -14,6 +14,7 @@ const DEFAULT_IMG =
 const DEFAULT_TITLE = 'Cravewheels — Video Food Delivery';
 const DEFAULT_DESC =
   'Discover and order your next meal through immersive video clips from local restaurants on Cravewheels.';
+const APP_ORIGIN = 'https://cravewheels.com';
 
 export default async function (req) {
   try {
@@ -69,7 +70,7 @@ export default async function (req) {
       }
     }
 
-    const fullRedirect = `${url.origin}${redirect}`;
+    const fullRedirect = `${APP_ORIGIN}${redirect}`;
 
     const videoTags = video
       ? `
@@ -114,8 +115,7 @@ export default async function (req) {
       },
     });
   } catch (error) {
-    const url = new URL(req.url);
-    const html = `<!doctype html><html><head><meta http-equiv="refresh" content="0;url=${url.origin}/"></head><body>Redirecting…</body></html>`;
+    const html = `<!doctype html><html><head><meta http-equiv="refresh" content="0;url=${APP_ORIGIN}/"></head><body>Redirecting…</body></html>`;
     return new Response(html, {
       status: 200,
       headers: { 'Content-Type': 'text/html' },
